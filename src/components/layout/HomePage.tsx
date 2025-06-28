@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, useGlobal, useUser } from '@/contexts';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 import caminhantesClock from '@/assets/caminhantes-clock.png';
 
 const HomePage: React.FC = () => {
@@ -10,6 +11,7 @@ const HomePage: React.FC = () => {
   const { currentUserData } = useUser();
   const { setIsMenuOpen } = useGlobal();
   const { showConfirmDialog } = useConfirmDialog();
+  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'escalacoes'>('home');
 
   const handleLogout = async () => {
     const confirmed = await showConfirmDialog({
@@ -35,6 +37,28 @@ const HomePage: React.FC = () => {
   const getUserName = () => {
     return currentUserData?.name || currentUser?.displayName || 'Usuário';
   };
+
+  // Renderizar view específica
+  if (currentView === 'admin') {
+    return <AdminDashboard onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'escalacoes') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Gerador de Escalações</h2>
+          <p className="text-gray-600 mb-6">Em desenvolvimento...</p>
+          <Button 
+            onClick={() => setCurrentView('home')}
+            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+          >
+            Voltar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex flex-col">
@@ -119,7 +143,10 @@ const HomePage: React.FC = () => {
         {/* Grid de aplicações */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card Escalações */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100">
+          <div 
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100"
+            onClick={() => setCurrentView('escalacoes')}
+          >
             <div className="text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">⚽</span>
@@ -138,7 +165,10 @@ const HomePage: React.FC = () => {
 
           {/* Card Administração (apenas para root/editor) */}
           {currentUserData && (currentUserData.role === 'root' || currentUserData.role === 'editor') && (
-            <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100">
+            <div 
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100"
+              onClick={() => setCurrentView('admin')}
+            >
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">⚙️</span>
