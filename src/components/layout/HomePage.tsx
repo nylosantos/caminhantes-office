@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Menu, LogOut, User } from 'lucide-react';
+import { Menu, LogOut, User, Calendar, Settings, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, useGlobal, useUser } from '@/contexts';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import AdminDashboard from '@/components/admin/AdminDashboard';
+import EscalacaoGenerator from '@/components/escalacoes/EscalacaoGenerator';
 import caminhantesClock from '@/assets/caminhantes-clock.png';
 
 const HomePage: React.FC = () => {
@@ -29,9 +30,11 @@ const HomePage: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Bom dia';
-    if (hour < 18) return 'Boa tarde';
-    return 'Boa noite';
+    const firstName = currentUserData?.name?.split(' ')[0] || currentUser?.displayName?.split(' ')[0] || 'Usuário';
+    
+    if (hour < 12) return `Bom dia, ${firstName}! 🌅`;
+    if (hour < 18) return `Boa tarde, ${firstName}! ☀️`;
+    return `Boa noite, ${firstName}! 🌙`;
   };
 
   const getUserName = () => {
@@ -44,26 +47,13 @@ const HomePage: React.FC = () => {
   }
 
   if (currentView === 'escalacoes') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Gerador de Escalações</h2>
-          <p className="text-gray-600 mb-6">Em desenvolvimento...</p>
-          <Button 
-            onClick={() => setCurrentView('home')}
-            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-          >
-            Voltar
-          </Button>
-        </div>
-      </div>
-    );
+    return <EscalacaoGenerator onBack={() => setCurrentView('home')} />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-red-100">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo e título */}
@@ -73,18 +63,18 @@ const HomePage: React.FC = () => {
                 alt="Caminhantes" 
                 className="w-10 h-10 mr-3"
               />
-              <h1 className="text-xl font-bold text-gray-800">
+              <h1 className="text-xl font-display-bold text-gray-800">
                 Caminhantes Office
               </h1>
             </div>
 
             {/* Menu e usuário */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-gray-600 font-display">
                 <User className="w-4 h-4 mr-1" />
                 {getUserName()}
                 {currentUserData?.role && (
-                  <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                  <span className="ml-2 px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full font-display-medium">
                     {currentUserData.role}
                   </span>
                 )}
@@ -103,7 +93,7 @@ const HomePage: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-display-medium"
               >
                 <LogOut className="w-4 h-4 mr-1" />
                 Sair
@@ -116,48 +106,39 @@ const HomePage: React.FC = () => {
       {/* Conteúdo principal */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Saudação personalizada */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {getGreeting()}, {getUserName().split(' ')[0]}! 👋
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Bem-vindo de volta ao Caminhantes Office
-          </p>
-        </div>
-
-        {/* Boas-vindas */}
         <div className="text-center mb-12">
           <img 
             src={caminhantesClock} 
             alt="Caminhantes" 
             className="w-20 h-20 mx-auto mb-6 drop-shadow-lg"
           />
-          <h3 className="text-3xl font-bold text-gray-800 mb-4">
-            Escolha sua aplicação
-          </h3>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Selecione uma das aplicações disponíveis para começar a trabalhar com suas escalações e conteúdos.
+          <h2 className="text-3xl font-display-extrabold text-gray-800 mb-2">
+            {getGreeting()}
+          </h2>
+          <p className="text-lg text-gray-600 font-display">
+            Bem-vindo ao Caminhantes Office
           </p>
         </div>
 
         {/* Grid de aplicações */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {/* Card Escalações */}
           <div 
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100"
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-teal-300"
             onClick={() => setCurrentView('escalacoes')}
           >
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">⚽</span>
+              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
                 Gerador de Escalações
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4 font-display">
                 Crie escalações personalizadas com logos, jogadores e informações da partida.
               </p>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium">
+                <Calendar className="w-4 h-4 mr-2" />
                 Acessar
               </Button>
             </div>
@@ -166,20 +147,21 @@ const HomePage: React.FC = () => {
           {/* Card Administração (apenas para root/editor) */}
           {currentUserData && (currentUserData.role === 'root' || currentUserData.role === 'editor') && (
             <div 
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100"
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-teal-300"
               onClick={() => setCurrentView('admin')}
             >
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">⚙️</span>
+                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Settings className="w-8 h-8 text-teal-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
                   Administração
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 mb-4 font-display">
                   Gerencie usuários, permissões e configurações do sistema.
                 </p>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium">
+                  <Settings className="w-4 h-4 mr-2" />
                   Acessar
                 </Button>
               </div>
@@ -187,19 +169,19 @@ const HomePage: React.FC = () => {
           )}
 
           {/* Card placeholder para futuras aplicações */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-not-allowed border border-gray-200 opacity-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 opacity-50">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🚀</span>
+                <Clock className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                Em breve
+              <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
+                Em Breve
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4 font-display">
                 Novas aplicações serão adicionadas em breve.
               </p>
-              <Button disabled className="w-full">
-                Em desenvolvimento
+              <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-display-medium">
+                Em Desenvolvimento
               </Button>
             </div>
           </div>
@@ -207,13 +189,13 @@ const HomePage: React.FC = () => {
       </main>
 
       {/* Footer com slogan */}
-      <footer className="bg-white border-t border-red-100 mt-auto">
+      <footer className="bg-white border-t border-gray-200 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
-            <p className="text-lg font-medium text-red-600 mb-2">
+            <p className="text-lg font-display-semibold text-teal-600 mb-2">
               "Aqui você não caminha sozinho"
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 font-display">
               © {new Date().getFullYear()} Caminhantes Office. Todos os direitos reservados.
             </p>
           </div>
