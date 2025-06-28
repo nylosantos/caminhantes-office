@@ -12,7 +12,8 @@ import {
   getDocs, 
   updateDoc, 
   query, 
-  orderBy 
+  orderBy,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UserData, CreateUserData, UserRole } from '@/types/user';
@@ -63,20 +64,38 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as UserData;
-            setCurrentUserData({ ...userData, id: currentUser.uid });
+            // Converter timestamps do Firestore para Date
+            const processedUserData = {
+              ...userData,
+              id: currentUser.uid,
+              createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt),
+              updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : new Date(userData.updatedAt),
+              lastLogin: userData.lastLogin?.toDate ? userData.lastLogin.toDate() : userData.lastLogin ? new Date(userData.lastLogin) : undefined
+            };
+            setCurrentUserData(processedUserData);
           } else {
             // Se não existe documento do usuário, criar um básico
-            const newUserData: UserData = {
-              id: currentUser.uid,
+            const newUserData = {
               name: currentUser.displayName || 'Usuário',
               email: currentUser.email || '',
-              role: 'user',
+              role: 'user' as UserRole,
               active: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
             };
             await setDoc(doc(db, 'users', currentUser.uid), newUserData);
-            setCurrentUserData(newUserData);
+            
+            // Recarregar após criar
+            const updatedDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (updatedDoc.exists()) {
+              const userData = updatedDoc.data() as UserData;
+              setCurrentUserData({
+                ...userData,
+                id: currentUser.uid,
+                createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date(),
+                updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : new Date()
+              });
+            }
           }
         } catch (error) {
           console.error('Erro ao carregar dados do usuário:', error);
@@ -100,14 +119,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       await updateProfile(user, { displayName: userData.name });
       
       // Criar documento no Firestore
-      const newUserData: UserData = {
-        id: user.uid,
+      const newUserData = {
         name: userData.name,
         email: userData.email,
         role: userData.role,
         active: userData.active ?? true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         createdBy: currentUser?.uid
       };
       
@@ -126,7 +144,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       await updateDoc(doc(db, 'users', userId), {
         active,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
       
       // Atualizar lista local
@@ -144,7 +162,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       await updateDoc(doc(db, 'users', userId), {
         role,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
       
       // Atualizar lista local
@@ -165,7 +183,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       const usersData: UserData[] = [];
       querySnapshot.forEach((doc) => {
-        usersData.push({ id: doc.id, ...doc.data() } as UserData);
+        const userData = doc.data() as UserData;
+        usersData.push({
+          ...userData,
+          id: doc.id,
+          createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt),
+          updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : new Date(userData.updatedAt),
+          lastLogin: userData.lastLogin?.toDate ? userData.lastLogin.toDate() : userData.lastLogin ? new Date(userData.lastLogin) : undefined
+        });
       });
       
       setUsers(usersData);

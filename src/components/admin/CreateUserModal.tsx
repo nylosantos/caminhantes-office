@@ -82,7 +82,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Criar Novo Usuário</h3>
+          <h3 className="text-lg font-display-semibold text-gray-800">Criar Novo Usuário</h3>
           <Button
             variant="ghost"
             size="sm"
@@ -97,7 +97,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Nome */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-display-medium text-gray-700 mb-2">
               Nome completo
             </label>
             <div className="relative">
@@ -107,7 +107,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors font-display"
                 placeholder="Nome do usuário"
                 disabled={loading}
               />
@@ -116,7 +116,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-display-medium text-gray-700 mb-2">
               Email
             </label>
             <div className="relative">
@@ -126,7 +126,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors font-display"
                 placeholder="email@exemplo.com"
                 disabled={loading}
               />
@@ -135,7 +135,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
 
           {/* Senha */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-display-medium text-gray-700 mb-2">
               Senha
             </label>
             <div className="relative">
@@ -145,7 +145,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors font-display"
                 placeholder="Mínimo 6 caracteres"
                 disabled={loading}
               />
@@ -154,7 +154,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
 
           {/* Cargo */}
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="role" className="block text-sm font-display-medium text-gray-700 mb-2">
               Cargo
             </label>
             <div className="relative">
@@ -163,7 +163,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
                 id="role"
                 value={formData.role}
                 onChange={(e) => handleInputChange('role', e.target.value as UserRole)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors cursor-pointer font-display"
                 disabled={loading}
               >
                 <option value="user">Usuário</option>
@@ -173,7 +173,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
                 )}
               </select>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1 font-display">
               {formData.role === 'user' && 'Acesso apenas às aplicações básicas'}
               {formData.role === 'editor' && 'Acesso às aplicações e área administrativa'}
               {formData.role === 'root' && 'Acesso total ao sistema'}
@@ -187,10 +187,10 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
               type="checkbox"
               checked={formData.active}
               onChange={(e) => handleInputChange('active', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+              className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded cursor-pointer"
               disabled={loading}
             />
-            <label htmlFor="active" className="ml-2 block text-sm text-gray-700 cursor-pointer">
+            <label htmlFor="active" className="ml-2 block text-sm text-gray-700 cursor-pointer font-display">
               Usuário ativo (pode fazer login)
             </label>
           </div>
@@ -202,14 +202,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
               variant="ghost"
               onClick={onClose}
               disabled={loading}
-              className="cursor-pointer"
+              className="cursor-pointer font-display-medium"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+              className="bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium"
             >
               {loading ? (
                 <div className="flex items-center">

@@ -8,6 +8,7 @@ export interface UserData {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  lastLogin?: Date; // Último login do usuário
   createdBy?: string; // ID do usuário que criou este usuário
 }
 

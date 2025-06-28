@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UserData } from '@/types/user';
 
@@ -21,15 +21,15 @@ export const createRootUser = async () => {
     
     console.log('Perfil atualizado');
     
-    // Criar documento no Firestore
-    const userData: UserData = {
-      id: user.uid,
+    // Criar documento no Firestore com timestamps corretos
+    const userData = {
       name: 'Nylo Santos',
       email: 'nylodocs@gmail.com',
       role: 'root',
       active: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastLogin: serverTimestamp()
     };
     
     await setDoc(doc(db, 'users', user.uid), userData);

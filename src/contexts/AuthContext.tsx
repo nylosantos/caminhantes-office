@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -36,7 +37,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const login = async (email: string, password: string): Promise<void> => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    
+    // Atualizar último login no Firestore
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastLogin: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar último login:', error);
+      // Não falhar o login por causa disso
+    }
   };
 
   const register = async (email: string, password: string, displayName: string): Promise<void> => {
