@@ -3,6 +3,7 @@ import { ArrowLeft, Users, Image, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import UserManagement from './UserManagement';
 import BaseImagesManager from './BaseImagesManager';
+import SquadManager from './SquadManager';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -41,6 +42,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <BaseImagesManager />
+        </main>
+      </div>
+    );
+  }
+
+  if (currentSection === 'squad') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100">
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Button
+                  onClick={() => setCurrentSection('home')}
+                  variant="ghost"
+                  size="sm"
+                  className="mr-4 cursor-pointer font-display-medium"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+                <h1 className="text-xl font-display-bold text-gray-800">
+                  Elenco do Liverpool
+                </h1>
+              </div>
+            </div>
+          </div>
+        </header>
+        
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <SquadManager />
         </main>
       </div>
     );
@@ -142,9 +174,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
               <p className="text-gray-600 mb-4 font-display">
                 Gerencie o elenco do Liverpool com nomes, números e posições.
               </p>
-              <Button className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-display-medium" disabled>
+              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium">
                 <Database className="w-4 h-4 mr-2" />
-                Em Breve
+                Gerenciar
               </Button>
             </div>
           </div>
