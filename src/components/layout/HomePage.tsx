@@ -51,9 +51,9 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b border-red-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo e título */}
@@ -74,7 +74,7 @@ const HomePage: React.FC = () => {
                 <User className="w-4 h-4 mr-1" />
                 {getUserName()}
                 {currentUserData?.role && (
-                  <span className="ml-2 px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full font-display-medium">
+                  <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-display-medium">
                     {currentUserData.role}
                   </span>
                 )}
@@ -121,15 +121,15 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Grid de aplicações */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {/* Card Escalações */}
           <div 
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-teal-300"
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-red-100 hover:border-red-300"
             onClick={() => setCurrentView('escalacoes')}
           >
             <div className="text-center">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-teal-600" />
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-red-600" />
               </div>
               <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
                 Gerador de Escalações
@@ -137,7 +137,7 @@ const HomePage: React.FC = () => {
               <p className="text-gray-600 mb-4 font-display">
                 Crie escalações personalizadas com logos, jogadores e informações da partida.
               </p>
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium">
+              <Button className="w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer font-display-medium">
                 <Calendar className="w-4 h-4 mr-2" />
                 Acessar
               </Button>
@@ -189,10 +189,10 @@ const HomePage: React.FC = () => {
       </main>
 
       {/* Footer com slogan */}
-      <footer className="bg-white border-t border-gray-200 mt-auto">
+      <footer className="bg-white border-t border-red-100 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
-            <p className="text-lg font-display-semibold text-teal-600 mb-2">
+            <p className="text-lg font-display-semibold text-red-600 mb-2">
               "Aqui você não caminha sozinho"
             </p>
             <p className="text-sm text-gray-500 font-display">

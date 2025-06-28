@@ -131,141 +131,301 @@ const EscalacaoGenerator: React.FC<EscalacaoGeneratorProps> = ({ onBack }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Configurar canvas
+    // Configurar canvas com proporções da imagem de exemplo
     canvas.width = 1080;
-    canvas.height = 1350;
+    canvas.height = 1080;
 
-    // Fundo
-    ctx.fillStyle = '#1a1a1a';
+    // Criar fundo vermelho com textura
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#dc2626');
+    gradient.addColorStop(1, '#991b1b');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Campo de futebol
-    drawField(ctx, canvas.width, canvas.height);
+    // Adicionar textura de fundo
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    for (let i = 0; i < 50; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 3, 0, 2 * Math.PI);
+      ctx.fill();
+    }
 
-    // Desenhar jogadores
-    const starters = players.filter(p => p.isStarter);
-    starters.forEach(player => {
-      if (player.x && player.y) {
-        drawPlayer(ctx, player, canvas.width, canvas.height);
+    // Desenhar arte do placar no topo (se disponível)
+    if (images.scoreboard) {
+      await drawScoreboardImage(ctx, images.scoreboard, canvas.width);
+    } else {
+      // Placeholder para arte do placar
+      drawPlaceholderScoreboard(ctx, matchData, canvas.width);
+    }
+
+    // Desenhar logo do canal no canto superior direito
+    if (images.logo) {
+      await drawLogoImage(ctx, images.logo, canvas.width);
+    } else {
+      // Usar logo padrão do Caminhantes
+      await drawDefaultLogo(ctx, canvas.width);
+    }
+
+    // Desenhar jogador destaque à direita
+    if (images.playerHighlight) {
+      await drawPlayerHighlightImage(ctx, images.playerHighlight, canvas.width, canvas.height);
+    } else {
+      // Placeholder para jogador
+      drawPlaceholderPlayer(ctx, canvas.width, canvas.height);
+    }
+
+    // Desenhar "ESCALAÇÃO" vertical à esquerda
+    drawEscalacaoTitle(ctx, canvas.height);
+
+    // Desenhar lista de titulares
+    drawStartersList(ctx, players.filter(p => p.isStarter));
+
+    // Desenhar banco de reservas
+    drawBenchList(ctx, players.filter(p => !p.isStarter), canvas.height);
+
+    // Desenhar técnico
+    drawCoachInfo(ctx, canvas.height);
+
+    // Desenhar informações da partida no rodapé
+    drawMatchFooter(ctx, matchData, canvas.width, canvas.height);
+  };
+
+  const drawScoreboardImage = async (ctx: CanvasRenderingContext2D, file: File, canvasWidth: number) => {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        // Desenhar arte do placar centralizada no topo
+        const aspectRatio = img.width / img.height;
+        const maxWidth = canvasWidth * 0.6;
+        const maxHeight = 150;
+        
+        let drawWidth = maxWidth;
+        let drawHeight = maxWidth / aspectRatio;
+        
+        if (drawHeight > maxHeight) {
+          drawHeight = maxHeight;
+          drawWidth = maxHeight * aspectRatio;
+        }
+        
+        const x = (canvasWidth - drawWidth) / 2;
+        const y = 30;
+        
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        resolve();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const drawPlaceholderScoreboard = (ctx: CanvasRenderingContext2D, match: MatchData, canvasWidth: number) => {
+    // Fundo semi-transparente
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(canvasWidth * 0.2, 30, canvasWidth * 0.6, 120);
+    
+    // Texto do confronto
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px "Funnel Display"';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${match.homeTeam} VS ${match.awayTeam}`, canvasWidth / 2, 80);
+    
+    ctx.font = '18px "Funnel Display"';
+    ctx.fillText(match.competition, canvasWidth / 2, 110);
+  };
+
+  const drawLogoImage = async (ctx: CanvasRenderingContext2D, file: File, canvasWidth: number) => {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 80;
+        const x = canvasWidth - size - 30;
+        const y = 30;
+        
+        // Círculo de fundo
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x + size/2, y + size/2, size/2 + 5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Logo
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + size/2, y + size/2, size/2, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.drawImage(img, x, y, size, size);
+        ctx.restore();
+        resolve();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const drawDefaultLogo = async (ctx: CanvasRenderingContext2D, canvasWidth: number) => {
+    // Usar logo padrão do Caminhantes
+    const img = new Image();
+    img.onload = () => {
+      const size = 80;
+      const x = canvasWidth - size - 30;
+      const y = 30;
+      
+      ctx.drawImage(img, x, y, size, size);
+    };
+    img.src = '/src/assets/caminhantes-clock.png';
+  };
+
+  const drawPlayerHighlightImage = async (ctx: CanvasRenderingContext2D, file: File, canvasWidth: number, canvasHeight: number) => {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = canvasWidth * 0.4;
+        const maxHeight = canvasHeight * 0.7;
+        const x = canvasWidth * 0.55;
+        const y = canvasHeight * 0.2;
+        
+        // Manter proporção da imagem
+        const aspectRatio = img.width / img.height;
+        let drawWidth = maxWidth;
+        let drawHeight = maxWidth / aspectRatio;
+        
+        if (drawHeight > maxHeight) {
+          drawHeight = maxHeight;
+          drawWidth = maxHeight * aspectRatio;
+        }
+        
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        resolve();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const drawPlaceholderPlayer = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
+    const x = canvasWidth * 0.55;
+    const y = canvasHeight * 0.2;
+    const width = canvasWidth * 0.4;
+    const height = canvasHeight * 0.7;
+    
+    // Placeholder retangular
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(x, y, width, height);
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 10]);
+    ctx.strokeRect(x, y, width, height);
+    ctx.setLineDash([]);
+    
+    // Texto placeholder
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '24px "Funnel Display"';
+    ctx.textAlign = 'center';
+    ctx.fillText('JOGADOR', x + width/2, y + height/2);
+    ctx.fillText('DESTAQUE', x + width/2, y + height/2 + 30);
+  };
+
+  const drawEscalacaoTitle = (ctx: CanvasRenderingContext2D, canvasHeight: number) => {
+    ctx.save();
+    ctx.translate(40, canvasHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 48px "Funnel Display"';
+    ctx.textAlign = 'center';
+    ctx.fillText('ESCALAÇÃO', 0, 0);
+    
+    ctx.restore();
+  };
+
+  const drawStartersList = (ctx: CanvasRenderingContext2D, starters: Player[]) => {
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    
+    const startX = 100;
+    let startY = 220;
+    
+    starters.forEach((player, index) => {
+      // Número em destaque
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = 'bold 32px "Funnel Display"';
+      ctx.fillText(player.number, startX, startY);
+      
+      // Nome do jogador
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px "Funnel Display"';
+      ctx.fillText(player.name.toUpperCase(), startX + 60, startY);
+      
+      startY += 45;
+    });
+  };
+
+  const drawBenchList = (ctx: CanvasRenderingContext2D, bench: Player[], canvasHeight: number) => {
+    const startY = canvasHeight - 200;
+    
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = 'bold 20px "Funnel Display"';
+    ctx.textAlign = 'left';
+    ctx.fillText('BANCO', 100, startY);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '18px "Funnel Display"';
+    
+    const benchText = bench.map(p => p.name.toUpperCase()).join(', ');
+    const maxWidth = 400;
+    
+    // Quebrar texto se necessário
+    const words = benchText.split(', ');
+    let line = '';
+    let y = startY + 25;
+    
+    words.forEach((word) => {
+      const testLine = line + (line ? ', ' : '') + word;
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && line) {
+        ctx.fillText(line, 100, y);
+        line = word;
+        y += 22;
+      } else {
+        line = testLine;
       }
     });
-
-    // Adicionar informações da partida
-    drawMatchInfo(ctx, matchData, canvas.width);
-
-    // Adicionar imagens se disponíveis
-    await drawImages(ctx, images, canvas.width, canvas.height);
-
-    // Adicionar lista de jogadores
-    drawPlayersList(ctx, players, canvas.width, canvas.height);
+    
+    if (line) {
+      ctx.fillText(line, 100, y);
+    }
   };
 
-  const drawField = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const fieldHeight = height * 0.6;
-    const fieldY = height * 0.15;
-
-    // Campo verde
-    ctx.fillStyle = '#2d5a2d';
-    ctx.fillRect(50, fieldY, width - 100, fieldHeight);
-
-    // Linhas do campo
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-
-    // Contorno
-    ctx.strokeRect(50, fieldY, width - 100, fieldHeight);
-
-    // Linha central
-    ctx.beginPath();
-    ctx.moveTo(50, fieldY + fieldHeight / 2);
-    ctx.lineTo(width - 50, fieldY + fieldHeight / 2);
-    ctx.stroke();
-
-    // Círculo central
-    ctx.beginPath();
-    ctx.arc(width / 2, fieldY + fieldHeight / 2, 80, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    // Áreas
-    const areaWidth = 200;
-    const areaHeight = 120;
+  const drawCoachInfo = (ctx: CanvasRenderingContext2D, canvasHeight: number) => {
+    const y = canvasHeight - 120;
     
-    // Área superior
-    ctx.strokeRect((width - areaWidth) / 2, fieldY, areaWidth, areaHeight);
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = 'bold 20px "Funnel Display"';
+    ctx.textAlign = 'left';
+    ctx.fillText('TÉCNICO', 100, y);
     
-    // Área inferior
-    ctx.strokeRect((width - areaWidth) / 2, fieldY + fieldHeight - areaHeight, areaWidth, areaHeight);
-  };
-
-  const drawPlayer = (ctx: CanvasRenderingContext2D, player: Player, canvasWidth: number, canvasHeight: number) => {
-    const fieldHeight = canvasHeight * 0.6;
-    const fieldY = canvasHeight * 0.15;
-    
-    const x = (player.x! / 100) * (canvasWidth - 100) + 50;
-    const y = (player.y! / 100) * fieldHeight + fieldY;
-
-    // Círculo do jogador
-    ctx.fillStyle = '#009782';
-    ctx.beginPath();
-    ctx.arc(x, y, 25, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Número
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px "Funnel Display"';
-    ctx.textAlign = 'center';
-    ctx.fillText(player.number, x, y + 5);
-
-    // Nome
-    ctx.font = '12px "Funnel Display"';
-    ctx.fillText(player.name, x, y + 45);
-  };
-
-  const drawMatchInfo = (ctx: CanvasRenderingContext2D, match: MatchData, canvasWidth: number) => {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 24px "Funnel Display"';
-    ctx.textAlign = 'center';
-    
-    const title = `${match.homeTeam} vs ${match.awayTeam}`;
-    ctx.fillText(title, canvasWidth / 2, 50);
-    
-    ctx.font = '16px "Funnel Display"';
-    ctx.fillText(`${match.competition} • ${match.date} • ${match.time}`, canvasWidth / 2, 80);
-    ctx.fillText(match.venue, canvasWidth / 2, 105);
+    ctx.fillText('JÜRGEN KLOPP', 100, y + 30); // Placeholder - pode ser editável
   };
 
-  const drawImages = async (ctx: CanvasRenderingContext2D, imgs: typeof images, canvasWidth: number, canvasHeight: number) => {
-    // Implementar desenho das imagens quando disponíveis
-    // Por enquanto, placeholder
-  };
-
-  const drawPlayersList = (ctx: CanvasRenderingContext2D, playersList: Player[], canvasWidth: number, canvasHeight: number) => {
-    const startY = canvasHeight * 0.8;
+  const drawMatchFooter = (ctx: CanvasRenderingContext2D, match: MatchData, canvasWidth: number, canvasHeight: number) => {
+    const y = canvasHeight - 60;
     
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 18px "Funnel Display"';
     ctx.textAlign = 'left';
-    ctx.fillText('ESCALAÇÃO:', 50, startY);
-
-    const starters = playersList.filter(p => p.isStarter);
-    const bench = playersList.filter(p => !p.isStarter);
-
-    // Titulares
-    starters.forEach((player, index) => {
-      ctx.font = '14px "Funnel Display"';
-      const y = startY + 30 + (index * 20);
-      ctx.fillText(`${player.number}. ${player.name}`, 50, y);
-    });
-
-    // Banco
-    ctx.font = 'bold 16px "Funnel Display"';
-    ctx.fillText('BANCO:', canvasWidth / 2 + 50, startY);
     
-    bench.forEach((player, index) => {
-      ctx.font = '14px "Funnel Display"';
-      const y = startY + 30 + (index * 20);
-      ctx.fillText(`${player.number}. ${player.name}`, canvasWidth / 2 + 50, y);
-    });
+    if (match.venue) {
+      ctx.fillText(match.venue.toUpperCase(), 100, y);
+    }
+    
+    if (match.date && match.time) {
+      const dateStr = new Date(match.date).toLocaleDateString('pt-BR');
+      ctx.fillText(`${dateStr} ÀS ${match.time}`, 100, y + 25);
+    }
+    
+    if (match.competition) {
+      ctx.fillText(match.competition.toUpperCase(), 100, y + 50);
+    }
   };
 
   const downloadImage = () => {
