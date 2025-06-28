@@ -36,8 +36,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setLoading(true);
       const playersRef = collection(db, 'squad');
-      const q = query(playersRef, orderBy('number', 'asc'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(playersRef);
       
       const squadPlayers: Player[] = [];
       snapshot.forEach((doc) => {
@@ -50,6 +49,21 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date()
         });
+      });
+      
+      // Ordenar por posição primeiro, depois por número
+      squadPlayers.sort((a, b) => {
+        // Definir ordem das posições
+        const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
+        
+        // Primeiro critério: posição
+        const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+        if (positionDiff !== 0) {
+          return positionDiff;
+        }
+        
+        // Segundo critério: número
+        return parseInt(a.number) - parseInt(b.number);
       });
       
       setPlayers(squadPlayers);
@@ -99,7 +113,18 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updatedAt: now
       };
 
-      setPlayers(prev => [...prev, newPlayer].sort((a, b) => parseInt(a.number) - parseInt(b.number)));
+      setPlayers(prev => {
+        const updated = [...prev, newPlayer];
+        // Ordenar por posição primeiro, depois por número
+        return updated.sort((a, b) => {
+          const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
+          const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+          if (positionDiff !== 0) {
+            return positionDiff;
+          }
+          return parseInt(a.number) - parseInt(b.number);
+        });
+      });
 
       return { success: true };
     } catch (error) {
@@ -133,8 +158,8 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       // Atualizar estado local
-      setPlayers(prev => 
-        prev.map(player => 
+      setPlayers(prev => {
+        const updated = prev.map(player => 
           player.id === playerId 
             ? { 
                 ...player, 
@@ -144,8 +169,18 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 updatedAt: now 
               }
             : player
-        ).sort((a, b) => parseInt(a.number) - parseInt(b.number))
-      );
+        );
+        
+        // Ordenar por posição primeiro, depois por número
+        return updated.sort((a, b) => {
+          const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
+          const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+          if (positionDiff !== 0) {
+            return positionDiff;
+          }
+          return parseInt(a.number) - parseInt(b.number);
+        });
+      });
 
       return { success: true };
     } catch (error) {
