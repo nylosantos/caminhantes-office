@@ -115,7 +115,7 @@ const LoginForm: React.FC = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -132,9 +132,9 @@ const LoginForm: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
-              <button className="text-red-600 hover:text-red-700 font-medium transition-colors">
+              <span className="text-red-600 font-medium cursor-help" title="Entre em contato com o administrador do sistema">
                 Entre em contato com o administrador
-              </button>
+              </span>
             </p>
           </div>
         </div>
@@ -142,7 +142,7 @@ const LoginForm: React.FC = () => {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            © 2024 Caminhantes Office. Todos os direitos reservados.
+            © {new Date().getFullYear()} Caminhantes Office. Todos os direitos reservados.
           </p>
         </div>
       </div>

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Menu, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth, useGlobal } from '@/contexts';
+import { useAuth, useGlobal, useUser } from '@/contexts';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import caminhantesClock from '@/assets/caminhantes-clock.png';
 
 const HomePage: React.FC = () => {
   const { currentUser, logout } = useAuth();
+  const { currentUserData } = useUser();
   const { setIsMenuOpen } = useGlobal();
   const { showConfirmDialog } = useConfirmDialog();
 
@@ -24,8 +25,19 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  };
+
+  const getUserName = () => {
+    return currentUserData?.name || currentUser?.displayName || 'Usuário';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-red-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,7 +58,12 @@ const HomePage: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center text-sm text-gray-600">
                 <User className="w-4 h-4 mr-1" />
-                {currentUser?.displayName || currentUser?.email}
+                {getUserName()}
+                {currentUserData?.role && (
+                  <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                    {currentUserData.role}
+                  </span>
+                )}
               </div>
               
               <Button
@@ -73,7 +90,17 @@ const HomePage: React.FC = () => {
       </header>
 
       {/* Conteúdo principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Saudação personalizada */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {getGreeting()}, {getUserName().split(' ')[0]}! 👋
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Bem-vindo de volta ao Caminhantes Office
+          </p>
+        </div>
+
         {/* Boas-vindas */}
         <div className="text-center mb-12">
           <img 
@@ -81,11 +108,11 @@ const HomePage: React.FC = () => {
             alt="Caminhantes" 
             className="w-20 h-20 mx-auto mb-6 drop-shadow-lg"
           />
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">
-            Bem-vindo, {currentUser?.displayName || 'Usuário'}!
-          </h2>
+          <h3 className="text-3xl font-bold text-gray-800 mb-4">
+            Escolha sua aplicação
+          </h3>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Escolha uma das aplicações disponíveis para começar a trabalhar com suas escalações e conteúdos.
+            Selecione uma das aplicações disponíveis para começar a trabalhar com suas escalações e conteúdos.
           </p>
         </div>
 
@@ -103,14 +130,34 @@ const HomePage: React.FC = () => {
               <p className="text-gray-600 mb-4">
                 Crie escalações personalizadas com logos, jogadores e informações da partida.
               </p>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
+              <Button className="w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
                 Acessar
               </Button>
             </div>
           </div>
 
+          {/* Card Administração (apenas para root/editor) */}
+          {currentUserData && (currentUserData.role === 'root' || currentUserData.role === 'editor') && (
+            <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-red-100">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⚙️</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Administração
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Gerencie usuários, permissões e configurações do sistema.
+                </p>
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                  Acessar
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Card placeholder para futuras aplicações */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200 opacity-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-not-allowed border border-gray-200 opacity-50">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚀</span>
@@ -126,26 +173,22 @@ const HomePage: React.FC = () => {
               </Button>
             </div>
           </div>
-
-          {/* Card placeholder */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200 opacity-50">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📊</span>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                Em breve
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Mais ferramentas administrativas em desenvolvimento.
-              </p>
-              <Button disabled className="w-full">
-                Em desenvolvimento
-              </Button>
-            </div>
-          </div>
         </div>
       </main>
+
+      {/* Footer com slogan */}
+      <footer className="bg-white border-t border-red-100 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center">
+            <p className="text-lg font-medium text-red-600 mb-2">
+              "Aqui você não caminha sozinho"
+            </p>
+            <p className="text-sm text-gray-500">
+              © {new Date().getFullYear()} Caminhantes Office. Todos os direitos reservados.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
