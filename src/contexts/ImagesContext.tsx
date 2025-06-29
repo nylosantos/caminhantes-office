@@ -1,164 +1,210 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, doc, setDoc, getDocs, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { BaseImage, ImageUploadResponse } from '@/types/images';
-import { uploadToImgBB, validateImageFile } from '@/lib/imgbb';
 import { useAuth } from './AuthContext';
+import { uploadToImgBB } from '@/lib/imgbb';
+import { BaseImage, GameArt, ImageUploadResponse } from '@/types/images';
 
 interface ImagesContextType {
+  // Imagens base
   baseImages: BaseImage[];
   loading: boolean;
-  uploadBaseImage: (file: File, type: BaseImage['type']) => Promise<{ success: boolean; error?: string }>;
-  deleteBaseImage: (type: BaseImage['type']) => Promise<{ success: boolean; error?: string }>;
-  getBaseImageByType: (type: BaseImage['type']) => BaseImage | null;
-  refreshImages: () => Promise<void>;
+  uploadBaseImage: (file: File, type: 'quadrada' | 'vertical' | 'horizontal') => Promise<ImageUploadResponse>;
+  removeBaseImage: (imageId: string) => Promise<{ success: boolean; error?: string }>;
+  getImageByType: (type: 'quadrada' | 'vertical' | 'horizontal') => BaseImage | null;
+  
+  // Arte do jogo
+  gameArt: GameArt | null;
+  uploadGameArt: (file: File) => Promise<ImageUploadResponse>;
+  removeGameArt: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const ImagesContext = createContext<ImagesContextType | undefined>(undefined);
 
-export const useImages = () => {
-  const context = useContext(ImagesContext);
-  if (context === undefined) {
-    throw new Error('useImages must be used within an ImagesProvider');
-  }
-  return context;
-};
-
 export const ImagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [baseImages, setBaseImages] = useState<BaseImage[]>([]);
-  const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
+  const [baseImages, setBaseImages] = useState<BaseImage[]>([]);
+  const [gameArt, setGameArt] = useState<GameArt | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Carregar imagens base do Firestore
-  const loadBaseImages = async () => {
+  useEffect(() => {
+    if (currentUser) {
+      loadImages();
+    }
+  }, [currentUser]);
+
+  const loadImages = async () => {
     try {
       setLoading(true);
-      const imagesRef = collection(db, 'baseImages');
-      const snapshot = await getDocs(imagesRef);
       
-      const images: BaseImage[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        images.push({
-          id: doc.id,
-          type: data.type,
-          url: data.url,
-          filename: data.filename,
-          uploadedAt: data.uploadedAt?.toDate() || new Date(),
-          uploadedBy: data.uploadedBy
-        });
-      });
+      // Carregar imagens base
+      const baseImagesSnapshot = await getDocs(collection(db, 'baseImages'));
+      const baseImagesData = baseImagesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        uploadedAt: doc.data().uploadedAt?.toDate() || new Date()
+      })) as BaseImage[];
       
-      setBaseImages(images);
+      setBaseImages(baseImagesData);
+
+      // Carregar arte do jogo
+      const gameArtSnapshot = await getDocs(collection(db, 'gameArt'));
+      if (!gameArtSnapshot.empty) {
+        const gameArtDoc = gameArtSnapshot.docs[0];
+        setGameArt({
+          id: gameArtDoc.id,
+          ...gameArtDoc.data(),
+          uploadedAt: gameArtDoc.data().uploadedAt?.toDate() || new Date()
+        } as GameArt);
+      }
     } catch (error) {
-      console.error('Erro ao carregar imagens base:', error);
+      console.error('Erro ao carregar imagens:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Upload de nova imagem base
-  const uploadBaseImage = async (file: File, type: BaseImage['type']): Promise<{ success: boolean; error?: string }> => {
+  const uploadBaseImage = async (file: File, type: 'quadrada' | 'vertical' | 'horizontal'): Promise<ImageUploadResponse> => {
     if (!currentUser) {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
-    // Validar arquivo
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
-
     try {
-      setLoading(true);
-
-      // Verificar se já existe uma imagem deste tipo e deletar
-      const existingImage = getBaseImageByType(type);
-      if (existingImage) {
-        await deleteBaseImage(type);
-      }
-
+      // Verificar se já existe uma imagem deste tipo
+      const existingImage = baseImages.find(img => img.type === type);
+      
       // Upload para ImgBB
-      const uploadResult: ImageUploadResponse = await uploadToImgBB(file);
+      const uploadResult = await uploadToImgBB(file);
       
       if (!uploadResult.success) {
-        return { success: false, error: uploadResult.error };
+        return uploadResult;
       }
 
-      // Salvar no Firestore
       const imageData: Omit<BaseImage, 'id'> = {
         type,
-        url: uploadResult.url,
+        url: uploadResult.url!,
         filename: file.name,
         uploadedAt: new Date(),
         uploadedBy: currentUser.uid
       };
 
-      const docRef = doc(collection(db, 'baseImages'));
-      await setDoc(docRef, {
-        ...imageData,
-        uploadedAt: new Date() // Firestore timestamp
-      });
-
-      // Atualizar estado local
-      const newImage: BaseImage = {
-        id: docRef.id,
-        ...imageData
-      };
-
-      setBaseImages(prev => [...prev.filter(img => img.type !== type), newImage]);
-
-      return { success: true };
-    } catch (error) {
-      console.error('Erro no upload da imagem base:', error);
-      return { success: false, error: 'Erro interno no upload' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Deletar imagem base
-  const deleteBaseImage = async (type: BaseImage['type']): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const imageToDelete = getBaseImageByType(type);
-      if (!imageToDelete) {
-        return { success: false, error: 'Imagem não encontrada' };
+      // Se existe uma imagem do mesmo tipo, substituir
+      if (existingImage) {
+        await setDoc(doc(db, 'baseImages', existingImage.id), {
+          ...imageData,
+          uploadedAt: serverTimestamp()
+        });
+        
+        // Atualizar estado local
+        setBaseImages(prev => prev.map(img => 
+          img.id === existingImage.id 
+            ? { ...imageData, id: existingImage.id, uploadedAt: new Date() }
+            : img
+        ));
+      } else {
+        // Criar nova imagem
+        const docRef = doc(collection(db, 'baseImages'));
+        await setDoc(docRef, {
+          ...imageData,
+          uploadedAt: serverTimestamp()
+        });
+        
+        // Atualizar estado local
+        setBaseImages(prev => [...prev, { ...imageData, id: docRef.id, uploadedAt: new Date() }]);
       }
 
-      // Deletar do Firestore
-      await deleteDoc(doc(db, 'baseImages', imageToDelete.id));
-
-      // Atualizar estado local
-      setBaseImages(prev => prev.filter(img => img.type !== type));
-
-      return { success: true };
+      return { success: true, url: uploadResult.url };
     } catch (error) {
-      console.error('Erro ao deletar imagem base:', error);
-      return { success: false, error: 'Erro ao deletar imagem' };
+      console.error('Erro ao fazer upload da imagem base:', error);
+      return { success: false, error: 'Erro ao fazer upload da imagem' };
     }
   };
 
-  // Buscar imagem por tipo
-  const getBaseImageByType = (type: BaseImage['type']): BaseImage | null => {
+  const removeBaseImage = async (imageId: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await deleteDoc(doc(db, 'baseImages', imageId));
+      setBaseImages(prev => prev.filter(img => img.id !== imageId));
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao remover imagem base:', error);
+      return { success: false, error: 'Erro ao remover imagem' };
+    }
+  };
+
+  const getImageByType = (type: 'quadrada' | 'vertical' | 'horizontal'): BaseImage | null => {
     return baseImages.find(img => img.type === type) || null;
   };
 
-  // Recarregar imagens
-  const refreshImages = async () => {
-    await loadBaseImages();
+  const uploadGameArt = async (file: File): Promise<ImageUploadResponse> => {
+    if (!currentUser) {
+      return { success: false, error: 'Usuário não autenticadoaaaaaa' };
+    }
+
+    try {
+      // Upload para ImgBB
+      const uploadResult = await uploadToImgBB(file);
+      
+      if (!uploadResult.success) {
+        return uploadResult;
+      }
+
+      const gameArtData: Omit<GameArt, 'id'> = {
+        url: uploadResult.url!,
+        filename: file.name,
+        uploadedAt: new Date(),
+        uploadedBy: currentUser.uid
+      };
+
+      // Se já existe uma arte do jogo, substituir
+      if (gameArt) {
+        await setDoc(doc(db, 'gameArt', gameArt.id), {
+          ...gameArtData,
+          uploadedAt: serverTimestamp()
+        });
+        
+        setGameArt({ ...gameArtData, id: gameArt.id, uploadedAt: new Date() });
+      } else {
+        // Criar nova arte do jogo
+        const docRef = doc(collection(db, 'gameArt'));
+        await setDoc(docRef, {
+          ...gameArtData,
+          uploadedAt: serverTimestamp()
+        });
+        
+        setGameArt({ ...gameArtData, id: docRef.id, uploadedAt: new Date() });
+      }
+
+      return { success: true, url: uploadResult.url };
+    } catch (error) {
+      console.error('Erro ao fazer upload da arte do jogo:', error);
+      return { success: false, error: 'Erro ao fazer upload da arte do jogo' };
+    }
   };
 
-  useEffect(() => {
-    loadBaseImages();
-  }, []);
+  const removeGameArt = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!gameArt) {
+      return { success: false, error: 'Nenhuma arte do jogo para remover' };
+    }
+
+    try {
+      await deleteDoc(doc(db, 'gameArt', gameArt.id));
+      setGameArt(null);
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao remover arte do jogo:', error);
+      return { success: false, error: 'Erro ao remover arte do jogo' };
+    }
+  };
 
   const value: ImagesContextType = {
     baseImages,
     loading,
     uploadBaseImage,
-    deleteBaseImage,
-    getBaseImageByType,
-    refreshImages
+    removeBaseImage,
+    getImageByType,
+    gameArt,
+    uploadGameArt,
+    removeGameArt
   };
 
   return (
@@ -166,5 +212,13 @@ export const ImagesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </ImagesContext.Provider>
   );
+};
+
+export const useImages = (): ImagesContextType => {
+  const context = useContext(ImagesContext);
+  if (!context) {
+    throw new Error('useImages deve ser usado dentro de um ImagesProvider');
+  }
+  return context;
 };
 

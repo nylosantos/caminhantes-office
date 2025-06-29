@@ -72,15 +72,19 @@ export interface MatchesResponse {
 }
 
 export interface MatchFormData {
-  homeTeam: string;
-  awayTeam: string;
-  competition: string;
-  matchDate: string;
-  matchTime: string;
-  venue: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  competition?: string;
+  matchDate?: string;
+  matchTime?: string;
+  venue?: string;
   matchday?: string;
   stage?: string;
   referee?: string;
+  // Novos campos obrigatórios
+  stadium: string;
+  date: string;
+  competitionRound: string;
 }
 
 // Liverpool FC ID na API Football-Data.org

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, doc, setDoc, getDocs, deleteDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { uploadToImgBB } from '@/lib/imgbb';
 import { Player, PlayerFormData, INITIAL_LIVERPOOL_SQUAD } from '@/types/squad';
 import { useAuth } from './AuthContext';
 
@@ -14,6 +15,8 @@ interface SquadContextType {
   isNumberTaken: (number: string, excludeId?: string) => boolean;
   initializeSquad: () => Promise<{ success: boolean; error?: string }>;
   refreshSquad: () => Promise<void>;
+  uploadPlayerImage: (playerId: string, imageFile: File) => Promise<{ success: boolean; imageUrl?: string; error?: string }>;
+  removePlayerImage: (playerId: string, imageUrl: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const SquadContext = createContext<SquadContextType | undefined>(undefined);
@@ -46,6 +49,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: data.name,
           number: data.number,
           position: data.position,
+          imgUrl: data.imgUrl || [],
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date()
         });
@@ -99,6 +103,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         name: playerData.name.trim(),
         number: playerData.number.trim(),
         position: playerData.position,
+        imgUrl: [],
         createdAt: now,
         updatedAt: now
       });
@@ -109,6 +114,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         name: playerData.name.trim(),
         number: playerData.number.trim(),
         position: playerData.position,
+        imgUrl: [],
         createdAt: now,
         updatedAt: now
       };
@@ -204,6 +210,91 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Upload de imagem do jogador
+  const uploadPlayerImage = async (playerId: string, imageFile: File): Promise<{ success: boolean; imageUrl?: string; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'Usuário não autenticado' };
+    }
+
+    const player = players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, error: 'Jogador não encontrado' };
+    }
+
+    // Verificar se já tem 2 imagens
+    if (player.imgUrl && player.imgUrl.length >= 2) {
+      return { success: false, error: 'Jogador já possui o máximo de 2 imagens' };
+    }
+
+    try {
+      // Upload para ImgBB
+      const uploadResult = await uploadToImgBB(imageFile);
+      
+      if (!uploadResult.success || !uploadResult.url) {
+        return { success: false, error: uploadResult.error || 'Erro no upload da imagem' };
+      }
+
+      // Atualizar no Firestore
+      const playerRef = doc(db, 'squad', playerId);
+      const currentImages = player.imgUrl || [];
+      const updatedImages = [...currentImages, uploadResult.url];
+      
+      await updateDoc(playerRef, {
+        imgUrl: updatedImages,
+        updatedAt: new Date()
+      });
+
+      // Atualizar estado local
+      setPlayers(prev => prev.map(p => 
+        p.id === playerId 
+          ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
+          : p
+      ));
+
+      return { success: true, imageUrl: uploadResult.url };
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      return { success: false, error: 'Erro interno no upload da imagem' };
+    }
+  };
+
+  // Remover imagem do jogador
+  const removePlayerImage = async (playerId: string, imageUrl: string): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'Usuário não autenticado' };
+    }
+
+    const player = players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, error: 'Jogador não encontrado' };
+    }
+
+    try {
+      // Remover URL da lista
+      const currentImages = player.imgUrl || [];
+      const updatedImages = currentImages.filter(url => url !== imageUrl);
+      
+      // Atualizar no Firestore
+      const playerRef = doc(db, 'squad', playerId);
+      await updateDoc(playerRef, {
+        imgUrl: updatedImages,
+        updatedAt: new Date()
+      });
+
+      // Atualizar estado local
+      setPlayers(prev => prev.map(p => 
+        p.id === playerId 
+          ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
+          : p
+      ));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao remover imagem:', error);
+      return { success: false, error: 'Erro interno ao remover imagem' };
+    }
+  };
+
   // Buscar jogadores por posição
   const getPlayersByPosition = (position: string): Player[] => {
     return players.filter(player => player.position === position);
@@ -238,6 +329,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         batch.push(
           setDoc(docRef, {
             ...playerData,
+            imgUrl: [],
             createdAt: now,
             updatedAt: now
           })
@@ -300,7 +392,9 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getPlayersByPosition,
     isNumberTaken,
     initializeSquad,
-    refreshSquad
+    refreshSquad,
+    uploadPlayerImage,
+    removePlayerImage
   };
 
   return (

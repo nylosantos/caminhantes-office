@@ -6,7 +6,7 @@ import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BaseImage, IMAGE_TYPES } from '@/types/images';
 
 const BaseImagesManager: React.FC = () => {
-  const { baseImages, loading, uploadBaseImage, deleteBaseImage, getBaseImageByType } = useImages();
+  const { baseImages, loading, uploadBaseImage, removeBaseImage, getImageByType } = useImages();
   const { showConfirmDialog } = useConfirmDialog();
   const [uploadingType, setUploadingType] = useState<BaseImage['type'] | null>(null);
 
@@ -32,13 +32,13 @@ const BaseImagesManager: React.FC = () => {
   const handleDelete = async (type: BaseImage['type']) => {
     const confirmed = await showConfirmDialog({
       title: 'Deletar Imagem Base',
-      message: `Tem certeza que deseja deletar a imagem ${IMAGE_TYPES[type].label}? Esta ação não pode ser desfeita.`,
-      confirmText: 'Deletar',
-      cancelText: 'Cancelar'
+      text: `Tem certeza que deseja deletar a imagem ${IMAGE_TYPES[type].label}? Esta ação não pode ser desfeita.`,
+      confirmButtonText: 'Deletar',
+      cancelButtonText: 'Cancelar'
     });
 
     if (confirmed) {
-      const result = await deleteBaseImage(type);
+      const result = await removeBaseImage(type);
       if (!result.success) {
         alert(`Erro ao deletar: ${result.error}`);
       }
@@ -46,7 +46,7 @@ const BaseImagesManager: React.FC = () => {
   };
 
   const ImageCard: React.FC<{ type: BaseImage['type'] }> = ({ type }) => {
-    const image = getBaseImageByType(type);
+    const image = getImageByType(type);
     const isUploading = uploadingType === type;
     const typeInfo = IMAGE_TYPES[type];
 
@@ -204,7 +204,7 @@ const BaseImagesManager: React.FC = () => {
 
       {/* Grid de imagens */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <ImageCard type="square" />
+        <ImageCard type="quadrada" />
         <ImageCard type="vertical" />
         <ImageCard type="horizontal" />
       </div>

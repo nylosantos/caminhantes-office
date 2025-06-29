@@ -5,6 +5,7 @@ export interface Player {
   name: string;
   number: string;
   position: PlayerPosition;
+  imgUrl?: string[]; // Array de até 2 URLs de imagens
   createdAt: Date;
   updatedAt: Date;
 }

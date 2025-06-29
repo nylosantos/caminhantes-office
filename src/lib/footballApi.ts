@@ -17,7 +17,7 @@ export interface ApiResponse<T> {
 }
 
 // Buscar próximas partidas do Liverpool
-export const getLiverpoolUpcomingMatches = async (limit: number = 10): Promise<ApiResponse<Match[]>> => {
+export const getLiverpoolUpcomingMatches = async (limit: number = 10) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const futureDate = new Date();
@@ -43,7 +43,7 @@ export const getLiverpoolUpcomingMatches = async (limit: number = 10): Promise<A
     }
 
     const data: MatchesResponse = await response.json();
-    return { success: true, data: data.matches };
+    return { success: true, matches: data.matches };
   } catch (error) {
     console.error('Erro ao buscar partidas do Liverpool:', error);
     return { success: false, error: 'Erro de conexão com a API' };
@@ -51,7 +51,7 @@ export const getLiverpoolUpcomingMatches = async (limit: number = 10): Promise<A
 };
 
 // Buscar partidas recentes do Liverpool
-export const getLiverpoolRecentMatches = async (limit: number = 10): Promise<ApiResponse<Match[]>> => {
+export const getLiverpoolRecentMatches = async (limit: number = 10) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const pastDate = new Date();
@@ -77,7 +77,7 @@ export const getLiverpoolRecentMatches = async (limit: number = 10): Promise<Api
     }
 
     const data: MatchesResponse = await response.json();
-    return { success: true, data: data.matches.reverse() }; // Mais recentes primeiro
+    return { success: true, matches: data.matches.reverse() }; // Mais recentes primeiro
   } catch (error) {
     console.error('Erro ao buscar partidas recentes do Liverpool:', error);
     return { success: false, error: 'Erro de conexão com a API' };
@@ -151,4 +151,8 @@ export const getApiInfo = () => ({
   features: ['Premier League', 'Champions League', 'FA Cup', 'Carabao Cup'],
   signupUrl: 'https://www.football-data.org/client/register'
 });
+
+// Aliases para compatibilidade com MatchSelector
+export const getUpcomingMatches = getLiverpoolUpcomingMatches;
+export const getPastMatches = getLiverpoolRecentMatches;
 

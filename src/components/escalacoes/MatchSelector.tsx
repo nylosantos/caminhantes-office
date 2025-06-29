@@ -1,291 +1,410 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Clock, MapPin, Users, Trophy, Loader, AlertCircle, ExternalLink } from 'lucide-react';
+import { Search, Calendar, MapPin, Trophy, Loader, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  getLiverpoolUpcomingMatches, 
-  getLiverpoolRecentMatches, 
-  matchToFormData, 
-  formatMatchDate,
-  isApiConfigured,
-  getApiInfo
-} from '@/lib/footballApi';
-import { Match, MatchFormData } from '@/types/matches';
+import { getUpcomingMatches, getPastMatches } from '@/lib/footballApi';
+import { Match } from '@/types/matches';
+import { formatDateToBrazilian, formatCompetitionRound, convertToSaoPauloTime } from '@/utils/dateUtils';
+import { EscalacaoData } from './EscalacaoGenerator';
 
-interface MatchSelectorProps {
-  onMatchSelect: (matchData: MatchFormData) => void;
-  onManualEntry: () => void;
+interface MatchData {
+  stadium: string;
+  date: string;
+  competition: string;
 }
 
-const MatchSelector: React.FC<MatchSelectorProps> = ({ onMatchSelect, onManualEntry }) => {
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [recentMatches, setRecentMatches] = useState<Match[]>([]);
+interface MatchSelectorProps {
+  onMatchSelected: (matchData: MatchData) => void;
+  escalacaoData: EscalacaoData
+}
+
+const MatchSelector: React.FC<MatchSelectorProps> = ({ onMatchSelected, escalacaoData }) => {
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'recent'>('upcoming');
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [manualMode, setManualMode] = useState(false);
 
-  const apiConfigured = isApiConfigured();
-  const apiInfo = getApiInfo();
+  // Campos manuais obrigatórios
+  const [manualData, setManualData] = useState<MatchData>({
+    stadium: escalacaoData.matchData?.stadium || '',
+    date: escalacaoData.matchData?.date || '',
+    competition: escalacaoData.matchData?.competition || ''
+  });
+
+  const [fieldErrors, setFieldErrors] = useState<Partial<MatchData>>({});
 
   useEffect(() => {
-    if (apiConfigured) {
-      loadMatches();
-    }
-  }, [apiConfigured]);
+    loadMatches();
+  }, []);
 
   const loadMatches = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [upcomingResult, recentResult] = await Promise.all([
-        getLiverpoolUpcomingMatches(8),
-        getLiverpoolRecentMatches(8)
-      ]);
+      // Tentar buscar próximas partidas primeiro
+      const upcomingResult = await getUpcomingMatches();
 
-      if (upcomingResult.success) {
-        setUpcomingMatches(upcomingResult.data || []);
+      if (upcomingResult.success && upcomingResult.matches && upcomingResult.matches.length > 0) {
+        setMatches(upcomingResult.matches);
       } else {
-        setError(upcomingResult.error || 'Erro ao carregar próximas partidas');
-      }
+        // Se não houver próximas, buscar partidas recentes
+        const pastResult = await getPastMatches();
 
-      if (recentResult.success) {
-        setRecentMatches(recentResult.data || []);
+        if (pastResult.success && pastResult.matches && pastResult.matches.length > 0) {
+          setMatches(pastResult.matches);
+        } else {
+          // Se não conseguir buscar nenhuma partida, ativar modo manual
+          setError('Não foi possível carregar partidas da API. Use o modo manual.');
+          setManualMode(true);
+        }
       }
     } catch (err) {
-      setError('Erro de conexão com a API');
+      console.error('Erro ao carregar partidas:', err);
+      setError('Erro ao conectar com a API de partidas. Use o modo manual.');
+      setManualMode(true);
     } finally {
       setLoading(false);
     }
   };
 
   const handleMatchSelect = (match: Match) => {
-    const formData = matchToFormData(match);
-    onMatchSelect(formData);
+    setSelectedMatch(match);
+
+    // Converter data para horário de São Paulo
+    const matchDate = new Date(match.utcDate);
+    const saoPauloDate = convertToSaoPauloTime(matchDate);
+
+    // Formatar dados da partida
+    const matchData: MatchData = {
+      stadium: match.venue || 'Estádio não informado',
+      date: formatDateToBrazilian(saoPauloDate),
+      competition: formatCompetitionRound(
+        match.competition.name,
+        match.matchday?.toString()
+      )
+    };
+
+    onMatchSelected(matchData);
   };
 
-  const getMatchStatusColor = (status: string) => {
-    switch (status) {
-      case 'SCHEDULED': return 'bg-blue-100 text-blue-800';
-      case 'LIVE': case 'IN_PLAY': return 'bg-green-100 text-green-800';
-      case 'FINISHED': return 'bg-gray-100 text-gray-800';
-      case 'POSTPONED': return 'bg-yellow-100 text-yellow-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const validateManualFields = (): boolean => {
+    const errors: Partial<MatchData> = {};
+
+    if (!manualData.stadium.trim()) {
+      errors.stadium = 'Estádio é obrigatório';
     }
-  };
 
-  const getMatchStatusText = (status: string) => {
-    switch (status) {
-      case 'SCHEDULED': return 'Agendada';
-      case 'LIVE': return 'Ao Vivo';
-      case 'IN_PLAY': return 'Em Andamento';
-      case 'FINISHED': return 'Finalizada';
-      case 'POSTPONED': return 'Adiada';
-      case 'CANCELLED': return 'Cancelada';
-      default: return status;
+    if (!manualData.date.trim()) {
+      errors.date = 'Data é obrigatória';
     }
+
+    if (!manualData.competition.trim()) {
+      errors.competition = 'Competição é obrigatória';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  if (!apiConfigured) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h3 className="text-xl font-display-semibold text-gray-800 mb-4">
-            API de Partidas Não Configurada
-          </h3>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <h4 className="font-display-medium text-yellow-800 mb-2">
-              Para usar a busca automática de partidas:
-            </h4>
-            <ol className="text-sm text-yellow-700 space-y-1 text-left">
-              <li>1. Registre-se gratuitamente em: <strong>{apiInfo.provider}</strong></li>
-              <li>2. Obtenha sua chave da API (100 requests/dia grátis)</li>
-              <li>3. Adicione no arquivo .env: <code className="bg-yellow-100 px-1 rounded">VITE_FOOTBALL_API_KEY=sua-chave</code></li>
-              <li>4. Reinicie o servidor de desenvolvimento</li>
-            </ol>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <Button
-              onClick={() => window.open(apiInfo.signupUrl, '_blank')}
-              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer font-display-medium"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Registrar na API
-            </Button>
-            <Button
-              onClick={onManualEntry}
-              variant="outline"
-              className="cursor-pointer font-display-medium"
-            >
-              Preencher Manualmente
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Monitorar mudanças nos dados manuais e chamar onMatchSelected automaticamente
+  useEffect(() => {
+    if (manualMode && manualData.stadium && manualData.date && manualData.competition) {
+      // Validar campos antes de submeter
+      if (validateManualFields()) {
+        onMatchSelected(manualData);
+        setSelectedMatch({} as Match); // Mock para indicar que foi selecionado
+      }
+    }
+  }, [manualData.stadium, manualData.date, manualData.competition, manualMode]);
+
+  // Função para validar e submeter dados manuais (chamada pelo EscalacaoGenerator)
+  const submitManualData = () => {
+    if (validateManualFields()) {
+      onMatchSelected(manualData);
+      setSelectedMatch({} as Match); // Mock para indicar que foi selecionado
+      return true;
+    }
+    return false;
+  };
+
+  // Expor função para o componente pai
+  React.useImperativeHandle(React.forwardRef(() => null), () => ({
+    submitManualData,
+    canProceed: selectedMatch !== null || (manualMode && manualData.stadium && manualData.date && manualData.competition)
+  }));
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h3 className="text-xl font-display-bold text-gray-800 mb-2">
-          Selecionar Partida do Liverpool
-        </h3>
+        <h2 className="text-2xl font-display-bold text-gray-800 mb-2">
+          Dados da Partida
+        </h2>
         <p className="text-gray-600 font-display">
-          Escolha uma partida da API ou preencha manualmente os dados
+          Selecione uma partida da API ou preencha manualmente
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab('upcoming')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-display-medium transition-colors ${
-            activeTab === 'upcoming'
-              ? 'bg-white text-red-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <Calendar className="w-4 h-4 inline mr-2" />
-          Próximas Partidas
-        </button>
-        <button
-          onClick={() => setActiveTab('recent')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-display-medium transition-colors ${
-            activeTab === 'recent'
-              ? 'bg-white text-red-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <Clock className="w-4 h-4 inline mr-2" />
-          Partidas Recentes
-        </button>
-      </div>
-
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader className="w-6 h-6 animate-spin text-red-600 mr-2" />
-          <span className="text-gray-600 font-display">Carregando partidas...</span>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            <span className="text-red-700 font-display-medium">{error}</span>
-          </div>
+      {/* Toggle entre API e Manual */}
+      <div className="flex justify-center">
+        <div className="bg-gray-100 rounded-lg p-1 flex">
           <Button
-            onClick={loadMatches}
-            variant="outline"
+            onClick={() => {
+              setManualMode(false);
+              setSelectedMatch(null);
+              if (matches.length === 0 && !loading) {
+                loadMatches();
+              }
+            }}
+            variant={!manualMode ? "default" : "ghost"}
             size="sm"
-            className="mt-3 cursor-pointer font-display-medium"
+            className={`cursor-pointer font-display-medium ${!manualMode
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
-            Tentar Novamente
+            <Search className="w-4 h-4 mr-2" />
+            Buscar da API
+          </Button>
+          <Button
+            onClick={() => {
+              setManualMode(true);
+              setSelectedMatch(null);
+              setError(null);
+            }}
+            variant={manualMode ? "default" : "ghost"}
+            size="sm"
+            className={`cursor-pointer font-display-medium ${manualMode
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'text-gray-600 hover:text-gray-800'
+              }`}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Preencher Manual
           </Button>
         </div>
-      )}
+      </div>
 
-      {/* Matches List */}
-      {!loading && !error && (
-        <div className="space-y-3">
-          {(activeTab === 'upcoming' ? upcomingMatches : recentMatches).length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-display">
-                {activeTab === 'upcoming' 
-                  ? 'Nenhuma partida próxima encontrada'
-                  : 'Nenhuma partida recente encontrada'
-                }
-              </p>
+      {/* Modo API */}
+      {!manualMode && (
+        <div className="space-y-4">
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-6 h-6 animate-spin text-red-600 mr-2" />
+              <span className="text-gray-600 font-display">Buscando partidas...</span>
             </div>
-          ) : (
-            (activeTab === 'upcoming' ? upcomingMatches : recentMatches).map((match) => (
-              <div
-                key={match.id}
-                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-red-300 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handleMatchSelect(match)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <Trophy className="w-5 h-5 text-gray-400" />
-                    <span className="font-display-medium text-gray-800">
-                      {match.competition.name}
-                    </span>
-                    {match.matchday && (
-                      <span className="text-sm text-gray-500 font-display">
-                        Rodada {match.matchday}
-                      </span>
-                    )}
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-display-medium ${getMatchStatusColor(match.status)}`}>
-                    {getMatchStatusText(match.status)}
-                  </span>
-                </div>
+          )}
 
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-display-semibold text-gray-800">
-                        {match.homeTeam.name}
-                      </p>
-                      <p className="text-sm text-gray-500 font-display">Casa</p>
-                    </div>
-                    
-                    <div className="text-center px-4">
-                      {match.status === 'FINISHED' && match.score.fullTime.home !== null ? (
-                        <div className="text-lg font-display-bold text-gray-800">
-                          {match.score.fullTime.home} - {match.score.fullTime.away}
-                        </div>
-                      ) : (
-                        <div className="text-lg font-display-bold text-gray-400">
-                          VS
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-left">
-                      <p className="font-display-semibold text-gray-800">
-                        {match.awayTeam.name}
-                      </p>
-                      <p className="text-sm text-gray-500 font-display">Visitante</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    <span className="font-display">{formatMatchDate(match.utcDate)}</span>
-                  </div>
-                  {match.referees?.[0] && (
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-1" />
-                      <span className="font-display">{match.referees[0].name}</span>
-                    </div>
-                  )}
-                </div>
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                <p className="text-red-800 font-display-medium">Erro na API</p>
               </div>
-            ))
+              <p className="text-red-700 text-sm mt-1 font-display">{error}</p>
+              <Button
+                onClick={() => setManualMode(true)}
+                className="mt-3 bg-red-600 hover:bg-red-700 text-white cursor-pointer font-display-medium"
+                size="sm"
+              >
+                Usar Modo Manual
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && matches.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-display-semibold text-gray-800">
+                Partidas Disponíveis ({matches.length})
+              </h3>
+              <div className="grid gap-3">
+                {matches.map((match) => {
+                  const matchDate = new Date(match.utcDate);
+                  const saoPauloDate = convertToSaoPauloTime(matchDate);
+                  const isSelected = selectedMatch?.id === match.id;
+
+                  return (
+                    <div
+                      key={match.id}
+                      onClick={() => handleMatchSelect(match)}
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${isSelected
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4 mb-2">
+                            <div className="flex items-center space-x-2">
+                              <img
+                                src={match.homeTeam.crest}
+                                alt={match.homeTeam.name}
+                                className="w-6 h-6"
+                              />
+                              <span className="font-display-medium text-gray-800">
+                                {match.homeTeam.name}
+                              </span>
+                            </div>
+                            <span className="text-gray-500 font-display">vs</span>
+                            <div className="flex items-center space-x-2">
+                              <img
+                                src={match.awayTeam.crest}
+                                alt={match.awayTeam.name}
+                                className="w-6 h-6"
+                              />
+                              <span className="font-display-medium text-gray-800">
+                                {match.awayTeam.name}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              <span className="font-display">
+                                {formatDateToBrazilian(saoPauloDate)}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              <span className="font-display">
+                                {match.venue || 'Estádio não informado'}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Trophy className="w-4 h-4 mr-1" />
+                              <span className="font-display">
+                                {formatCompetitionRound(
+                                  match.competition.name,
+                                  match.matchday?.toString()
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <CheckCircle className="w-5 h-5 text-red-600" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       )}
 
-      {/* Manual Entry Button */}
-      <div className="text-center pt-4 border-t border-gray-200">
-        <Button
-          onClick={onManualEntry}
-          variant="outline"
-          className="cursor-pointer font-display-medium"
-        >
-          <Search className="w-4 h-4 mr-2" />
-          Preencher Dados Manualmente
-        </Button>
-      </div>
+      {/* Modo Manual */}
+      {manualMode && (
+        <div className="space-y-4">
+          <h3 className="font-display-semibold text-gray-800">
+            Preencher Dados Manualmente
+          </h3>
+
+          <div className="grid gap-4">
+            <div>
+              <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                Estádio *
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  value={manualData.stadium}
+                  onChange={(e) => {
+                    setManualData(prev => ({ ...prev, stadium: e.target.value }));
+                    if (fieldErrors.stadium) {
+                      setFieldErrors(prev => ({ ...prev, stadium: undefined }));
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-display ${fieldErrors.stadium ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Ex: Anfield, Old Trafford, Estádio do Maracanã"
+                />
+              </div>
+              {fieldErrors.stadium && (
+                <p className="text-red-500 text-sm mt-1 font-display">{fieldErrors.stadium}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                Data e Horário *
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  value={manualData.date}
+                  onChange={(e) => {
+                    setManualData(prev => ({ ...prev, date: e.target.value }));
+                    if (fieldErrors.date) {
+                      setFieldErrors(prev => ({ ...prev, date: undefined }));
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-display ${fieldErrors.date ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Ex: 28 de junho de 2025 às 20:00"
+                />
+              </div>
+              {fieldErrors.date && (
+                <p className="text-red-500 text-sm mt-1 font-display">{fieldErrors.date}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-1 font-display">
+                Formato: DD de mês de AAAA às HH:MM
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                Competição / Rodada *
+              </label>
+              <div className="relative">
+                <Trophy className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  value={manualData.competition}
+                  onChange={(e) => {
+                    setManualData(prev => ({ ...prev, competition: e.target.value }));
+                    if (fieldErrors.competition) {
+                      setFieldErrors(prev => ({ ...prev, competition: undefined }));
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-display ${fieldErrors.competition ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Ex: Premier League - 38ª Rodada, Champions League - Final"
+                />
+              </div>
+              {fieldErrors.competition && (
+                <p className="text-red-500 text-sm mt-1 font-display">{fieldErrors.competition}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-1 font-display">
+                Formato: Competição - Rodada/Fase
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dados selecionados */}
+      {selectedMatch && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center mb-2">
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+            <h4 className="font-display-semibold text-green-800">
+              Dados da Partida Confirmados
+            </h4>
+          </div>
+          <div className="space-y-1 text-sm text-green-700 font-display">
+            <p><strong>Estádio:</strong> {manualMode ? manualData.stadium : selectedMatch.venue || 'Não informado'}</p>
+            <p><strong>Data:</strong> {manualMode ? manualData.date : formatDateToBrazilian(convertToSaoPauloTime(new Date(selectedMatch.utcDate || '')))}</p>
+            <p><strong>Competição:</strong> {manualMode ? manualData.competition : formatCompetitionRound(selectedMatch.competition?.name || '', selectedMatch.matchday?.toString())}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,25 @@ const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 
 export const uploadToImgBB = async (file: File): Promise<ImageUploadResponse> => {
   try {
+    // Verificar se a chave da API está configurada
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'sua-chave-aqui') {
+      return {
+        success: false,
+        url: '',
+        error: 'Chave da API do ImgBB não configurada. Verifique o arquivo .env'
+      };
+    }
+
+    // Validar arquivo
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      return {
+        success: false,
+        url: '',
+        error: validation.error || 'Arquivo inválido'
+      };
+    }
+
     // Converter arquivo para base64
     const base64 = await fileToBase64(file);
     
@@ -21,6 +40,14 @@ export const uploadToImgBB = async (file: File): Promise<ImageUploadResponse> =>
       body: formData
     });
 
+    if (!response.ok) {
+      return {
+        success: false,
+        url: '',
+        error: `Erro HTTP: ${response.status} - ${response.statusText}`
+      };
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -33,7 +60,7 @@ export const uploadToImgBB = async (file: File): Promise<ImageUploadResponse> =>
       return {
         success: false,
         url: '',
-        error: data.error?.message || 'Erro no upload'
+        error: data.error?.message || 'Erro no upload para ImgBB'
       };
     }
   } catch (error) {
@@ -41,7 +68,7 @@ export const uploadToImgBB = async (file: File): Promise<ImageUploadResponse> =>
     return {
       success: false,
       url: '',
-      error: 'Erro de conexão com o serviço de upload'
+      error: error instanceof Error ? error.message : 'Erro de conexão com o serviço de upload'
     };
   }
 };
