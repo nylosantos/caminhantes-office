@@ -1,0 +1,365 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ArrowLeft, ArrowRight, Download, Loader, Check, Calendar, ImageIcon, Palette } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useImages } from '@/contexts/ImagesContext';
+import MatchSelector, { MatchSelectorRef } from './MatchSelector';
+import GameArtSelector from './GameArtSelector';
+import PositionController from './PositionController';
+import { BaseGeneratorData } from '@/types/generator';
+import { Match, MatchFormData } from '@/types/matches';
+import { Player } from '@/types/squad';
+import { RoundTranslationsDocument } from '@/types/translations';
+import { convertToSaoPauloTime, formatCompetitionRound, formatDateToBrazilian } from '@/utils/dateUtils';
+import PostTextGenerator from './PostTextGenerator';
+import { EscalacaoData } from './EscalacaoGenerator';
+import LayerManager from '../generator/LayerManager';
+
+interface NextGameGeneratorProps {
+    onBack: () => void;
+    translations: RoundTranslationsDocument[];
+}
+
+interface ElementConfig {
+    canvasWidth: number;
+    canvasHeight: number;
+    backgroundX: number;
+    backgroundY: number;
+    backgroundSize: number;
+    logoX: number;
+    logoY: number;
+    logoSize: number;
+    placarX: number;
+    placarY: number;
+    placarSize: number;
+    jogadorX: number;
+    jogadorY: number;
+    jogadorSize: number;
+    footerX: number;
+    footerY: number;
+    footerSize: number;
+}
+
+const initialImageGeneratorConfigs: Record<'quadrada' | 'vertical' | 'horizontal', ElementConfig> = {
+    quadrada: {
+        canvasWidth: 1080, canvasHeight: 1080, backgroundX: 0, backgroundY: 0, backgroundSize: 1080,
+        logoX: 901, logoY: 61, logoSize: 123, placarX: -43, placarY: 135, placarSize: 820,
+        jogadorX: 444, jogadorY: 90, jogadorSize: 950, footerX: 63, footerY: 755, footerSize: 2.1500000000000004,
+    },
+    vertical: {
+        canvasWidth: 1080, canvasHeight: 1920, backgroundX: 0, backgroundY: 0, backgroundSize: 1080,
+        logoX: 865, logoY: 203, logoSize: 175, placarX: 17, placarY: 443, placarSize: 875,
+        jogadorX: 520, jogadorY: 407, jogadorSize: 950, footerX: 160, footerY: 1090, footerSize: 2.1500000000000004,
+    },
+    horizontal: {
+        canvasWidth: 1920, canvasHeight: 1080, backgroundX: 0, backgroundY: 0, backgroundSize: 1920,
+        logoX: 1761, logoY: 31, logoSize: 123, placarX: 850, placarY: -40, placarSize: 450,
+        jogadorX: 175, jogadorY: 100, jogadorSize: 950, footerX: 30, footerY: 1005, footerSize: 1,
+    }
+};
+
+const NextGameGenerator: React.FC<NextGameGeneratorProps> = ({ onBack, translations }) => {
+    const { baseImages } = useImages();
+    const [configs, setConfigs] = useState(initialImageGeneratorConfigs);
+
+    const canvasFundoRef = useRef<HTMLCanvasElement>(null);
+    const canvasInteracaoRef = useRef<HTMLCanvasElement>(null);
+    const canvasFrenteRef = useRef<HTMLCanvasElement>(null);
+
+    const [renderOrder, setRenderOrder] = useState(['background', 'jogador', 'placar', 'logo', 'info']);
+    const [activeElementKey, setActiveElementKey] = useState<string | null>(null);
+    const [activeImageType, setActiveImageType] = useState<'quadrada' | 'vertical' | 'horizontal'>('quadrada');
+    const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+    const matchSelectorRef = useRef<MatchSelectorRef>(null);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [generating, setGenerating] = useState(false);
+    const [downloadable, setDownloadable] = useState(false);
+    const [generatorData, setGeneratorData] = useState<BaseGeneratorData>({
+        matchData: null, gameArt: null, featuredPlayer: null, featuredPlayerImageUrl: null, featuredPlayerImgIndex: null,
+    });
+
+    const steps = [
+        { id: 1, title: 'Dados da Partida', icon: Calendar, description: 'Selecione a partida' },
+        { id: 2, title: 'Arte e Jogador', icon: Palette, description: 'Selecione a arte e o jogador' },
+        { id: 3, title: 'Gerar Imagem', icon: ImageIcon, description: 'Ajuste e gere a imagem' }
+    ];
+    const [step1Valid, setStep1Valid] = useState(false);
+
+    const canAdvanceToStep = (step: number): boolean => {
+        switch (step) {
+            case 2: return step1Valid;
+            case 3: return !!generatorData.gameArt && !!generatorData.featuredPlayer;
+            default: return true;
+        }
+    };
+
+    const handleNextStep = () => {
+        if (currentStep === 1 && matchSelectorRef.current && !matchSelectorRef.current.canProceed) {
+            if (!matchSelectorRef.current.submitManualData()) return;
+        }
+        setCurrentStep(prev => prev + 1);
+    };
+
+    const handleMatchSelect = (matchData: Match) => {
+        const matchDate = new Date(matchData.fixture.date);
+        const saoPauloDate = convertToSaoPauloTime(matchDate);
+        const formData: MatchFormData = {
+            homeTeam: matchData.teams.home.name, awayTeam: matchData.teams.away.name, competition: formatCompetitionRound(matchData, translations),
+            matchDate: new Date().toISOString().split('T')[0], matchTime: '16:00',
+            venue: matchData.fixture.venue.name || 'Estádio não informado', matchday: '', stage: '',
+            referee: matchData.fixture.referee || '', stadium: matchData.fixture.venue.name || 'Estádio não informado',
+            date: formatDateToBrazilian(saoPauloDate), competitionRound: formatCompetitionRound(matchData, translations),
+        };
+        setSelectedMatch(matchData);
+        setGeneratorData(prev => ({ ...prev, matchData: formData }));
+    };
+
+    const handleGameArtSelect = (gameArt: string, featuredPlayer: Player | null, featuredPlayerImageUrl: string | null) => {
+        setGeneratorData(prev => ({ ...prev, gameArt, featuredPlayer, featuredPlayerImageUrl }));
+    };
+
+    const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`Falha ao carregar imagem: ${src}`));
+            img.src = src;
+        });
+    }, []);
+
+    const drawLayer = useCallback(async (
+        canvasRef: React.RefObject<HTMLCanvasElement>,
+        config: ElementConfig,
+        elementsToDraw: string[]
+    ) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        canvas.width = config.canvasWidth;
+        canvas.height = config.canvasHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (const key of elementsToDraw) {
+            if (key === 'background') {
+                try {
+                    const imgUrl = baseImages.find(img => img.type === activeImageType && img.section === 'proximo_jogo')?.url;
+                    if (imgUrl) {
+                        const bgImg = await loadImage(imgUrl);
+                        const aspect = bgImg.height / bgImg.width;
+                        const width = config.backgroundSize;
+                        const height = width * aspect;
+                        ctx.drawImage(bgImg, config.backgroundX, config.backgroundY, width, height);
+                    }
+                } catch (e) { console.warn(e); }
+            } else if (key === 'logo') {
+                try {
+                    const logoImg = await loadImage('/src/assets/caminhantes-clock.png');
+                    ctx.drawImage(logoImg, config.logoX, config.logoY, config.logoSize, config.logoSize);
+                } catch (e) { console.error(e); }
+            } else if (key === 'placar' && generatorData.gameArt) {
+                try {
+                    const placarImg = await loadImage(generatorData.gameArt);
+                    const aspect = 720 / 1280;
+                    const width = config.placarSize;
+                    const height = width * aspect;
+                    ctx.drawImage(placarImg, config.placarX, config.placarY, width, height);
+                } catch (e) { console.error(e); }
+            } else if (key === 'jogador' && generatorData.featuredPlayerImageUrl) {
+                try {
+                    const jogadorImg = await loadImage(generatorData.featuredPlayerImageUrl);
+                    const aspect = 1062 / 666;
+                    const width = config.jogadorSize;
+                    const height = width * aspect;
+                    ctx.drawImage(jogadorImg, config.jogadorX, config.jogadorY, width, height);
+                } catch (e) { console.error(e); }
+            } else if (key === 'info' && generatorData.matchData) {
+                const scale = config.footerSize;
+                ctx.fillStyle = '#FFFFFF';
+                // Shadow properties
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.75)'; // Black shadow, 50% opacity
+                ctx.shadowOffsetX = 2 * scale;          // Horizontal offset
+                ctx.shadowOffsetY = 2 * scale;          // Vertical offset
+                ctx.shadowBlur = 2 * scale;            // Blur radius
+                ctx.font = `800 ${20 * config.footerSize}px "Funnel Display", sans-serif`;
+                ctx.textAlign = 'left'
+                ctx.fillText(`${generatorData.matchData.homeTeam?.toUpperCase()} 🆚 ${generatorData.matchData.awayTeam?.toUpperCase()}`, config.footerX, config.footerY);
+                ctx.fillText(generatorData.matchData.stadium.toUpperCase(), config.footerX, config.footerY + (22 * config.footerSize));
+                ctx.fillText(generatorData.matchData.date.toUpperCase(), config.footerX, config.footerY + (50 * config.footerSize));
+                ctx.fillText(generatorData.matchData.competitionRound.toUpperCase(), config.footerX, config.footerY + (75 * config.footerSize));
+                ctx.fillText(generatorData.matchData.referee !== '' ? `ÁRBITRO: ${generatorData.matchData.referee.toUpperCase()}` : '', config.footerX, config.footerY + (100 * config.footerSize));
+            }
+        }
+    }, [generatorData, baseImages, activeImageType, loadImage]);
+
+    const redrawAllLayers = useCallback(() => {
+        if (currentStep !== 3 || !canvasFundoRef.current || !canvasInteracaoRef.current || !canvasFrenteRef.current) return;
+
+        setGenerating(true);
+        const config = configs[activeImageType];
+        const activeIndex = activeElementKey ? renderOrder.indexOf(activeElementKey) : -1;
+
+        const behindElements = activeIndex > -1 ? renderOrder.slice(0, activeIndex) : renderOrder;
+        const activeElement = activeIndex > -1 ? [renderOrder[activeIndex]] : [];
+        const aheadElements = activeIndex > -1 ? renderOrder.slice(activeIndex + 1) : [];
+
+        Promise.all([
+            // @ts-expect-error
+            drawLayer(canvasFundoRef, config, behindElements),
+            // @ts-expect-error
+            drawLayer(canvasInteracaoRef, config, activeElement),
+            // @ts-expect-error
+            drawLayer(canvasFrenteRef, config, aheadElements)
+        ]).then(() => {
+            setGenerating(false);
+            setDownloadable(true);
+        }).catch(error => {
+            console.error("Erro ao desenhar camadas:", error);
+            setGenerating(false);
+        });
+    }, [currentStep, configs, activeImageType, activeElementKey, renderOrder, drawLayer]);
+
+    useEffect(() => { redrawAllLayers(); }, [redrawAllLayers]);
+
+    useEffect(() => {
+        if (currentStep !== 3 || !activeElementKey || !canvasInteracaoRef.current) return;
+        const config = configs[activeImageType];
+        const activeElement = [activeElementKey];
+        // @ts-expect-error
+        drawLayer(canvasInteracaoRef, config, activeElement);
+    }, [configs, activeElementKey, activeImageType, currentStep, drawLayer]);
+
+    const downloadImage = () => {
+        const finalCanvas = document.createElement('canvas');
+        const config = configs[activeImageType];
+        finalCanvas.width = config.canvasWidth;
+        finalCanvas.height = config.canvasHeight;
+        const ctx = finalCanvas.getContext('2d');
+        if (!ctx || !canvasFundoRef.current || !canvasInteracaoRef.current || !canvasFrenteRef.current) return;
+
+        ctx.drawImage(canvasFundoRef.current, 0, 0);
+        ctx.drawImage(canvasInteracaoRef.current, 0, 0);
+        ctx.drawImage(canvasFrenteRef.current, 0, 0);
+
+        const a = document.createElement('a');
+        a.href = finalCanvas.toDataURL('image/png');
+        a.download = `proximo-jogo-${activeImageType}.png`;
+        a.click();
+    };
+
+    const handleMoveElement = (axis: 'x' | 'y', amount: number) => {
+        if (!activeElementKey) return;
+        setConfigs(prev => {
+            const keyX = `${activeElementKey}X` as keyof ElementConfig;
+            const keyY = `${activeElementKey}Y` as keyof ElementConfig;
+            const newConfig = { ...prev[activeImageType] };
+
+            if (axis === 'x' && keyX in newConfig) (newConfig[keyX] as number) += amount;
+            else if (axis === 'y' && keyY in newConfig) (newConfig[keyY] as number) += amount;
+
+            return { ...prev, [activeImageType]: newConfig };
+        });
+    };
+
+    const handleResizeElement = (amount: number) => {
+        if (!activeElementKey) return;
+        setConfigs(prev => {
+            const sizeKey = `${activeElementKey}Size` as keyof ElementConfig;
+            const newConfig = { ...prev[activeImageType] };
+
+            if (sizeKey in newConfig) {
+                // Elementos de escala (texto) são mais sensíveis
+                if (sizeKey === 'footerSize') {
+                    (newConfig[sizeKey] as number) += amount / 100; // Incremento pequeno
+                } else {
+                    // Elementos de imagem (logo, placar, etc.) recebem o incremento direto
+                    (newConfig[sizeKey] as number) += amount; // Incremento maior e perceptível
+                }
+            }
+
+            return { ...prev, [activeImageType]: newConfig };
+        });
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
+            <header className="bg-white shadow-sm border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <Button onClick={onBack} variant="ghost" size="sm" className="mr-4"><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button>
+                        <h1 className="text-xl font-display-bold text-gray-800">Gerador de Próximo Jogo</h1>
+                    </div>
+                </div>
+            </header>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div className="flex items-center justify-between mb-8">
+                    {steps.map((step, index) => (
+                        <div key={step.id} className="flex items-center">
+                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${currentStep === step.id ? 'bg-red-600 border-red-600 text-white cursor-pointer' : currentStep > step.id ? 'bg-green-600 border-green-600 text-white cursor-pointer' : canAdvanceToStep(step.id) ? 'border-gray-300 text-gray-500 hover:border-red-300 cursor-pointer' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`} onClick={() => canAdvanceToStep(step.id) && setCurrentStep(step.id)}>
+                                {currentStep > step.id ? <Check className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
+                            </div>
+                            <div className="ml-3 hidden md:block">
+                                <p className={`text-sm font-display-medium ${currentStep === step.id ? 'text-red-600' : currentStep > step.id ? 'text-green-600' : 'text-gray-500'}`}>{step.title}</p>
+                                <p className="text-xs text-gray-500 font-display">{step.description}</p>
+                            </div>
+                            {index < steps.length - 1 && <div className={`w-12 h-px mx-4 ${currentStep > step.id ? 'bg-green-600' : 'bg-gray-300'}`} />}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    {currentStep === 1 && <MatchSelector ref={matchSelectorRef} onMatchSelected={handleMatchSelect} escalacaoData={{ ...generatorData, formation: null, selectedPlayers: {}, reservePlayers: [], coach: '' }} onValidationChange={setStep1Valid} translations={translations} />}
+                    {currentStep === 2 && <GameArtSelector onArtSelect={handleGameArtSelect} escalacaoData={{ ...generatorData, formation: null, selectedPlayers: {}, reservePlayers: [], coach: '' }} setEscalacaoData={(update) => setGeneratorData(prev => { let newState; if (typeof update === 'function') { const prevAsEscalacaoData: EscalacaoData = { ...prev, formation: null, selectedPlayers: {}, reservePlayers: [], coach: '' }; newState = update(prevAsEscalacaoData); } else { newState = update; } return { ...prev, gameArt: newState.gameArt, featuredPlayer: newState.featuredPlayer, featuredPlayerImageUrl: newState.featuredPlayerImageUrl }; })} />}
+                    {currentStep === 3 && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-1 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-display-medium text-gray-700 mb-2">Editar Imagem:</label>
+                                        <select value={activeImageType} onChange={(e) => setActiveImageType(e.target.value as any)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                            <option value="quadrada">Quadrada</option>
+                                            <option value="vertical">Vertical</option>
+                                            {/* <option value="horizontal">Horizontal</option> */}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-display-medium text-gray-700 mb-2">Elemento a ser Movido:</label>
+                                        <select value={activeElementKey ?? ''} onChange={(e) => setActiveElementKey(e.target.value || null)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                            <option value="">Nenhum</option>
+                                            {renderOrder.map(key => <option key={key} value={key} className="capitalize">{key}</option>)}
+                                        </select>
+                                    </div>
+                                    {activeElementKey && <PositionController elementName={activeElementKey} onMove={handleMoveElement} onResize={handleResizeElement} />}
+                                    <div className="mt-4 pt-4 border-t"><LayerManager renderOrder={renderOrder} setRenderOrder={setRenderOrder} /></div>
+                                </div>
+                                <div className="relative md:col-span-2 w-full flex justify-center items-center bg-gray-200 rounded-lg p-2">
+                                    <div style={{ position: 'relative', width: '100%', paddingBottom: `${(configs[activeImageType].canvasHeight / configs[activeImageType].canvasWidth) * 100}%` }}>
+                                        {[canvasFundoRef, canvasInteracaoRef, canvasFrenteRef].map((ref, index) => (
+                                            <canvas key={index} ref={ref} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: index + 1 }} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            {selectedMatch && <PostTextGenerator postType={'proximoJogo'} match={selectedMatch} translations={translations} />}
+                            <div className="flex justify-center space-x-4">
+                                <Button onClick={redrawAllLayers} disabled={generating} className="bg-red-600 hover:bg-red-700 text-white">
+                                    {generating ? <><Loader className="w-4 h-4 mr-2 animate-spin" /> Gerando...</> : <><ImageIcon className="w-4 h-4 mr-2" /> Gerar Imagem</>}
+                                </Button>
+                                {downloadable && <Button onClick={downloadImage} disabled={generating} variant="outline"><Download className="w-4 h-4 mr-2" /> Download</Button>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className={`flex ${currentStep === 1 ? 'justify-end' : 'justify-between'} mt-6`}>
+                    {currentStep > 1 && <Button onClick={() => setCurrentStep(prev => prev - 1)} variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Anterior</Button>}
+                    {currentStep < 3 && <Button onClick={handleNextStep} disabled={!canAdvanceToStep(currentStep + 1)} className="bg-red-600 hover:bg-red-700 text-white">Próximo <ArrowRight className="w-4 h-4 ml-2" /></Button>}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default NextGameGenerator;

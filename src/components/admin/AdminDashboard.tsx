@@ -13,7 +13,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [currentSection, setCurrentSection] = useState<'home' | 'users' | 'images' | 'squad'>('home');
 
   if (currentSection === 'users') {
-    return <UserManagement onBack={() => setCurrentSection('home')} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100">
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Button
+                  onClick={() => setCurrentSection('home')}
+                  variant="ghost"
+                  size="sm"
+                  className="mr-4 cursor-pointer font-display-medium"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+                <h1 className="text-xl font-display-bold text-gray-800">
+                  Administração de usuários
+                </h1>
+              </div>
+            </div>
+          </div>
+        </header>
+        
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <UserManagement />
+        </main>
+      </div>
+    );
   }
 
   if (currentSection === 'images') {

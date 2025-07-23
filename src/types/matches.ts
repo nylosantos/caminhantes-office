@@ -1,3 +1,4 @@
+
 export interface Team {
   id: number;
   name: string;
@@ -22,39 +23,86 @@ export interface Season {
 }
 
 export interface Match {
-  id: number;
-  utcDate: string;
-  status: 'SCHEDULED' | 'LIVE' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'POSTPONED' | 'SUSPENDED' | 'CANCELLED';
-  matchday: number;
-  stage: string;
-  group?: string;
-  lastUpdated: string;
-  homeTeam: Team;
-  awayTeam: Team;
-  score: {
-    winner?: 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW';
-    duration: string;
-    fullTime: {
-      home: number | null;
-      away: number | null;
-    };
-    halfTime: {
-      home: number | null;
-      away: number | null;
-    };
+  fixture: {
+    id: number
+    referee: string | null
+    timezone: string
+    date: string
+    timestamp: number
+    venue: {
+      id: number
+      name: string
+      city: any
+    }
+    status: {
+      long: string
+      short: string
+      elapsed: any
+      extra: any
+    }
   };
-  odds?: {
-    msg: string;
+  teams: {
+    home: {
+      id: number
+      name: string
+      logo: string
+      winner: boolean | null
+    }
+    away: {
+      id: number
+      name: string
+      logo: string
+      winner: boolean | null
+    }
   };
-  referees: Array<{
-    id: number;
-    name: string;
-    type: string;
-    nationality: string;
-  }>;
-  competition: Competition;
-  season: Season;
+  goals: { home: number; away: number };
+  league: {
+    id: number
+    name: string
+    country: string
+    logo: string
+    flag: string
+    season: number
+    round: string
+    standings: boolean
+  };
+  // lastUpdated: Timestamp;
 }
+
+// export interface Match {
+//   id: number;
+//   utcDate: string;
+//   status: 'SCHEDULED' | 'LIVE' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'POSTPONED' | 'SUSPENDED' | 'CANCELLED';
+//   matchday: number;
+//   stage: string;
+//   group?: string;
+//   lastUpdated: string;
+//   homeTeam: Team;
+//   awayTeam: Team;
+//   score: {
+//     winner?: 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW';
+//     duration: string;
+//     fullTime: {
+//       home: number | null;
+//       away: number | null;
+//     };
+//     halfTime: {
+//       home: number | null;
+//       away: number | null;
+//     };
+//   };
+//   odds?: {
+//     msg: string;
+//   };
+//   referees: Array<{
+//     id: number;
+//     name: string;
+//     type: string;
+//     nationality: string;
+//   }>;
+//   competition: Competition;
+//   season: Season;
+// }
 
 export interface MatchesResponse {
   filters: {
@@ -80,7 +128,7 @@ export interface MatchFormData {
   venue?: string;
   matchday?: string;
   stage?: string;
-  referee?: string;
+  referee: string;
   // Novos campos obrigatórios
   stadium: string;
   date: string;
@@ -88,14 +136,16 @@ export interface MatchFormData {
 }
 
 // Liverpool FC ID na API Football-Data.org
-export const LIVERPOOL_TEAM_ID = 64;
+export const LIVERPOOL_TEAM_ID = 40;
 
 // Competições principais
 export const COMPETITIONS = {
-  PREMIER_LEAGUE: { id: 2021, name: 'Premier League', code: 'PL' },
-  CHAMPIONS_LEAGUE: { id: 2001, name: 'UEFA Champions League', code: 'CL' },
-  FA_CUP: { id: 2057, name: 'FA Cup', code: 'FAC' },
-  CARABAO_CUP: { id: 2058, name: 'League Cup', code: 'LC' },
-  EUROPA_LEAGUE: { id: 2018, name: 'UEFA Europa League', code: 'EL' }
+  'Premier League': 39,
+  'Community Shield': 528,
+  'UEFA Champions League': 2,
+  'UEFA Europa League': 3,
+  'FA Cup': 45,
+  'Carabao Cup': 48,
+  'FIFA World Cup': 1,
+  'FIFA Club World Cup': 15
 };
-

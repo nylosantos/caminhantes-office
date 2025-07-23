@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Info, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Info, Check } from 'lucide-react';
 import { FORMATIONS, Formation, getPositionsByType } from '@/types/formations';
 import { PLAYER_POSITIONS } from '@/types/squad';
 

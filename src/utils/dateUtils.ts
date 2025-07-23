@@ -1,5 +1,8 @@
 // Utilitários para formatação de datas no padrão brasileiro
 
+import { Match } from "@/types/matches";
+import { RoundTranslationsDocument } from "@/types/translations";
+
 export const formatDateToBrazilian = (date: Date): string => {
   const months = [
     'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -15,28 +18,21 @@ export const formatDateToBrazilian = (date: Date): string => {
   return `${day} de ${month} de ${year} às ${hours}:${minutes}`;
 };
 
-export const formatCompetitionRound = (competition: string, round?: string): string => {
-  if (!round) {
-    return competition;
+export const formatCompetitionRound = (match: Match, translations: RoundTranslationsDocument[]): string => {
+  if (!match) {
+    return 'Data não encontrada';
   }
 
-  // Verificar se é uma rodada numérica
-  const roundNumber = parseInt(round);
-  if (!isNaN(roundNumber)) {
-    return `${competition} - ${roundNumber}ª Rodada`;
+  if (match.league.round.startsWith("Club Friendlies")) {
+    return 'Amistoso'
   }
 
-  // Para fases eliminatórias
-  const phaseMap: { [key: string]: string } = {
-    'round_of_16': 'Oitavas de Final',
-    'quarter_final': 'Quartas de Final',
-    'semi_final': 'Semifinal',
-    'final': 'Final',
-    'third_place': 'Disputa do 3º Lugar'
-  };
+  if (translations) {
+    const round = translations[0][match.league.id][match.league.round]
+    return `${match.league.name} - ${round}`;
+  }
 
-  const phase = phaseMap[round.toLowerCase()] || round;
-  return `${competition} - ${phase}`;
+  return ''
 };
 
 export const convertToSaoPauloTime = (utcDate: Date): Date => {
@@ -45,7 +41,7 @@ export const convertToSaoPauloTime = (utcDate: Date): Date => {
   const saoPauloOffset = -3 * 60; // -3 horas em minutos
   const utcTime = utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000);
   const saoPauloTime = new Date(utcTime + (saoPauloOffset * 60000));
-  
+
   return saoPauloTime;
 };
 

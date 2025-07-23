@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
-import { Menu, LogOut, User, Calendar, Settings, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, User, Settings, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth, useGlobal, useUser } from '@/contexts';
+import { useAuth, useUser } from '@/contexts';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import EscalacaoGenerator from '@/components/escalacoes/EscalacaoGenerator';
 import caminhantesClock from '@/assets/caminhantes-clock.png';
+import { useRoundTranslations } from '@/hooks/useRoundsTranslations';
+import MatchDayGenerator from '../escalacoes/MatchDayGenerator';
+import NextGameGenerator from '../escalacoes/NextGameGenerator';
+import MotmGenerator from '../escalacoes/MotmGenerator';
+import FullTimeGenerator from '../escalacoes/FullTimeGenerator';
+import CardsContainer from '../escalacoes/CardsSectionHomePage';
+import ConfrontoGenerator from '../escalacoes/ConfrontoGenerator';
 
 const HomePage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { currentUserData } = useUser();
-  const { setIsMenuOpen } = useGlobal();
+  // const { setIsMenuOpen } = useGlobal();
   const { showConfirmDialog } = useConfirmDialog();
-  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'escalacoes'>('home');
+  const [currentView, setCurrentView] = useState<"home" | "admin" | "escalacoes" | "matchday" | "nextGame" | "fullTime" | "motm" | "confronto">('home');
+  const { translations } = useRoundTranslations();
 
   const handleLogout = async () => {
     const confirmed = await showConfirmDialog({
@@ -31,7 +39,7 @@ const HomePage: React.FC = () => {
   const getGreeting = () => {
     const hour = new Date().getHours();
     const firstName = currentUserData?.name?.split(' ')[0] || currentUser?.displayName?.split(' ')[0] || 'Usuário';
-    
+
     if (hour < 12) return `Bom dia, ${firstName}! 🌅`;
     if (hour < 18) return `Boa tarde, ${firstName}! ☀️`;
     return `Boa noite, ${firstName}! 🌙`;
@@ -47,7 +55,27 @@ const HomePage: React.FC = () => {
   }
 
   if (currentView === 'escalacoes') {
-    return <EscalacaoGenerator onBack={() => setCurrentView('home')} />;
+    return <EscalacaoGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'matchday') {
+    return <MatchDayGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'nextGame') {
+    return <NextGameGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'motm') {
+    return <MotmGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'fullTime') {
+    return <FullTimeGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+  }
+
+  if (currentView === 'confronto') {
+    return <ConfrontoGenerator translations={translations} onBack={() => setCurrentView('home')} />;
   }
 
   return (
@@ -58,9 +86,9 @@ const HomePage: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo e título */}
             <div className="flex items-center">
-              <img 
-                src={caminhantesClock} 
-                alt="Caminhantes" 
+              <img
+                src={caminhantesClock}
+                alt="Caminhantes"
                 className="w-10 h-10 mr-3"
               />
               <h1 className="text-xl font-display-bold text-gray-800">
@@ -74,20 +102,20 @@ const HomePage: React.FC = () => {
                 <User className="w-4 h-4 mr-1" />
                 {getUserName()}
                 {currentUserData?.role && (
-                  <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-display-medium">
+                  <span className="hidden md:flex ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-display-medium">
                     {currentUserData.role}
                   </span>
                 )}
               </div>
-              
-              <Button
+
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMenuOpen(true)}
                 className="lg:hidden"
               >
                 <Menu className="w-5 h-5" />
-              </Button>
+              </Button> */}
 
               <Button
                 variant="ghost"
@@ -107,9 +135,9 @@ const HomePage: React.FC = () => {
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Saudação personalizada */}
         <div className="text-center mb-12">
-          <img 
-            src={caminhantesClock} 
-            alt="Caminhantes" 
+          <img
+            src={caminhantesClock}
+            alt="Caminhantes"
             className="w-20 h-20 mx-auto mb-6 drop-shadow-lg"
           />
           <h2 className="text-3xl font-display-extrabold text-gray-800 mb-2">
@@ -121,32 +149,14 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Grid de aplicações */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {/* Card Escalações */}
-          <div 
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-red-100 hover:border-red-300"
-            onClick={() => setCurrentView('escalacoes')}
-          >
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
-                Gerador de Escalações
-              </h3>
-              <p className="text-gray-600 mb-4 font-display">
-                Crie escalações personalizadas com logos, jogadores e informações da partida.
-              </p>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer font-display-medium">
-                <Calendar className="w-4 h-4 mr-2" />
-                Acessar
-              </Button>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+
+          {/* Cards Imagens */}
+          <CardsContainer setCurrentView={setCurrentView} />
 
           {/* Card Administração (apenas para root/editor) */}
           {currentUserData && (currentUserData.role === 'root' || currentUserData.role === 'editor') && (
-            <div 
+            <div
               className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-teal-300"
               onClick={() => setCurrentView('admin')}
             >
