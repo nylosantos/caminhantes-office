@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
-import caminhantesClock from '@/assets/caminhantes-clock.png';
+import caminhantesClock from '/caminhantes-clock.png';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');

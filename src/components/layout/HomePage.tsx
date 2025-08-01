@@ -1,25 +1,29 @@
 import { useState } from 'react';
-import { LogOut, User, Settings, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth, useUser } from '@/contexts';
-import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
+import caminhantesClock from '/caminhantes-clock.png';
+import { useAuth, useGlobal, useUser } from '@/contexts';
 import AdminDashboard from '@/components/admin/AdminDashboard';
-import EscalacaoGenerator from '@/components/escalacoes/EscalacaoGenerator';
-import caminhantesClock from '@/assets/caminhantes-clock.png';
+import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useRoundTranslations } from '@/hooks/useRoundsTranslations';
+import EscalacaoGenerator from '@/components/escalacoes/EscalacaoGenerator';
+import MotmGenerator from '../escalacoes/MotmGenerator';
 import MatchDayGenerator from '../escalacoes/MatchDayGenerator';
 import NextGameGenerator from '../escalacoes/NextGameGenerator';
-import MotmGenerator from '../escalacoes/MotmGenerator';
 import FullTimeGenerator from '../escalacoes/FullTimeGenerator';
-import CardsContainer from '../escalacoes/CardsSectionHomePage';
 import ConfrontoGenerator from '../escalacoes/ConfrontoGenerator';
+
+// 1. Importar a configuração de navegação e os tipos
+import { ViewType, getVisibleNavItems, NavItem } from '@/config/navigation';
+import { UserData } from '@/types/user';
+import SectionHeader from './SectionHeader';
 
 const HomePage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { currentUserData } = useUser();
-  // const { setIsMenuOpen } = useGlobal();
+  const { setIsMenuOpen } = useGlobal();
   const { showConfirmDialog } = useConfirmDialog();
-  const [currentView, setCurrentView] = useState<"home" | "admin" | "escalacoes" | "matchday" | "nextGame" | "fullTime" | "motm" | "confronto">('home');
+  const [currentView, setCurrentView] = useState<ViewType>('home');
   const { translations } = useRoundTranslations();
 
   const handleLogout = async () => {
@@ -28,7 +32,7 @@ const HomePage: React.FC = () => {
       text: 'Tem certeza que deseja sair?',
       icon: 'question',
       confirmButtonText: 'Sair',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     });
 
     if (confirmed) {
@@ -38,102 +42,108 @@ const HomePage: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const firstName = currentUserData?.name?.split(' ')[0] || currentUser?.displayName?.split(' ')[0] || 'Usuário';
+    const firstName =
+      currentUserData?.name?.split(' ')[0] ||
+      currentUser?.displayName?.split(' ')[0] ||
+      'Usuário';
 
     if (hour < 12) return `Bom dia, ${firstName}! 🌅`;
     if (hour < 18) return `Boa tarde, ${firstName}! ☀️`;
     return `Boa noite, ${firstName}! 🌙`;
   };
 
-  const getUserName = () => {
-    return currentUserData?.name || currentUser?.displayName || 'Usuário';
+  // 2. Função de navegação unificada que o menu usará
+  const handleNavigation = (view: ViewType) => {
+    setCurrentView(view);
   };
+
+  const visibleNavItems = getVisibleNavItems(currentUserData);
+
+  const cardItems = visibleNavItems.filter(
+    (item) => item.isCard && item.colorClasses && item.lucideIcon // Ensure card-specific data exists
+  );
 
   // Renderizar view específica
   if (currentView === 'admin') {
-    return <AdminDashboard onBack={() => setCurrentView('home')} />;
+    // 4. Passar as props corretas para o AdminDashboard
+    return (
+      <AdminDashboard
+        onBack={() => setCurrentView('home')}
+        onNavigate={handleNavigation}
+        onLogout={handleLogout}
+      />
+    );
   }
-
   if (currentView === 'escalacoes') {
-    return <EscalacaoGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <EscalacaoGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
-
   if (currentView === 'matchday') {
-    return <MatchDayGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <MatchDayGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
-
   if (currentView === 'nextGame') {
-    return <NextGameGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <NextGameGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
-
   if (currentView === 'motm') {
-    return <MotmGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <MotmGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
-
   if (currentView === 'fullTime') {
-    return <FullTimeGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <FullTimeGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
-
   if (currentView === 'confronto') {
-    return <ConfrontoGenerator translations={translations} onBack={() => setCurrentView('home')} />;
+    return (
+      <ConfrontoGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex flex-col">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-red-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo e título */}
-            <div className="flex items-center">
-              <img
-                src={caminhantesClock}
-                alt="Caminhantes"
-                className="w-10 h-10 mr-3"
-              />
-              <h1 className="text-xl font-display-bold text-gray-800">
-                Caminhantes Office
-              </h1>
-            </div>
+      <SectionHeader
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+        title="Caminhantes Office"
+      />
 
-            {/* Menu e usuário */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-600 font-display">
-                <User className="w-4 h-4 mr-1" />
-                {getUserName()}
-                {currentUserData?.role && (
-                  <span className="hidden md:flex ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-display-medium">
-                    {currentUserData.role}
-                  </span>
-                )}
-              </div>
-
-              {/* <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMenuOpen(true)}
-                className="lg:hidden"
-              >
-                <Menu className="w-5 h-5" />
-              </Button> */}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer font-display-medium"
-              >
-                <LogOut className="w-4 h-4 mr-1" />
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo principal */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Saudação personalizada */}
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="text-center mb-12">
           <img
             src={caminhantesClock}
@@ -148,37 +158,16 @@ const HomePage: React.FC = () => {
           </p>
         </div>
 
-        {/* Grid de aplicações */}
+        {/* 6. Grid de aplicações renderizado dinamicamente */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-
-          {/* Cards Imagens */}
-          <CardsContainer setCurrentView={setCurrentView} />
-
-          {/* Card Administração (apenas para root/editor) */}
-          {currentUserData && (currentUserData.role === 'root' || currentUserData.role === 'editor') && (
-            <div
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-teal-300"
-              onClick={() => setCurrentView('admin')}
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Settings className="w-8 h-8 text-teal-600" />
-                </div>
-                <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
-                  Administração
-                </h3>
-                <p className="text-gray-600 mb-4 font-display">
-                  Gerencie usuários, permissões e configurações do sistema.
-                </p>
-                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white cursor-pointer font-display-medium">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Acessar
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Card placeholder para futuras aplicações */}
+          {cardItems.map((item) => (
+            <Card
+              key={item.id}
+              item={item} // Pass the entire item object
+              onClick={setCurrentView}
+              currentUserData={currentUserData} // Pass currentUserData for dynamic description
+            />
+          ))}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 opacity-50">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -190,7 +179,10 @@ const HomePage: React.FC = () => {
               <p className="text-gray-600 mb-4 font-display">
                 Novas aplicações serão adicionadas em breve.
               </p>
-              <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-display-medium">
+              <Button
+                disabled
+                className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-display-medium"
+              >
                 Em Desenvolvimento
               </Button>
             </div>
@@ -198,7 +190,6 @@ const HomePage: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer com slogan */}
       <footer className="bg-white border-t border-red-100 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
@@ -206,7 +197,8 @@ const HomePage: React.FC = () => {
               "Aqui você não caminha sozinho"
             </p>
             <p className="text-sm text-gray-500 font-display">
-              © {new Date().getFullYear()} Caminhantes Office. Todos os direitos reservados.
+              © {new Date().getFullYear()} Caminhantes Office. Todos os direitos
+              reservados.
             </p>
           </div>
         </div>
@@ -215,5 +207,60 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage;
+// New Interface for CardProps
+interface CardProps {
+  item: NavItem; // The entire NavItem object
+  onClick: React.Dispatch<React.SetStateAction<ViewType>>;
+  currentUserData: UserData | null | undefined; // To pass to the description function
+}
 
+// Updated Card Component
+const Card: React.FC<CardProps> = ({ item, onClick, currentUserData }) => {
+  // Destructure properties from 'item' for easier access
+  const { id, title, description, colorClasses, lucideIcon, isCard } = item;
+
+  // Type guard and check for required card properties
+  if (!isCard || !colorClasses || !lucideIcon) {
+    // Optionally handle cases where an item flagged as isCard is missing required props
+    console.warn(
+      `Card with ID ${id} is missing required properties for rendering as a card.`
+    );
+    return null; // Don't render if it's not a valid card item
+  }
+
+  // Resolve the icon component
+  const IconComponent = lucideIcon;
+
+  // Resolve the description string (if it's a function)
+  const resolvedDescription =
+    typeof description === 'function'
+      ? description(currentUserData)
+      : description;
+
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer ${colorClasses.border}`}
+      onClick={() => onClick(id)} // Use item.id for view
+    >
+      <div className="text-center">
+        <div
+          className={`w-16 h-16 ${colorClasses.iconBg} rounded-full flex items-center justify-center mx-auto mb-4`}
+        >
+          <IconComponent className={`w-8 h-8 ${colorClasses.iconColor}`} />
+        </div>
+        <h3 className="text-xl font-display-semibold text-gray-800 mb-2">
+          {title}
+        </h3>
+        <p className="text-gray-600 mb-4 font-display">{resolvedDescription}</p>
+        <Button
+          className={`w-full ${colorClasses.button} text-white cursor-pointer font-display-medium`}
+        >
+          <IconComponent className="w-4 h-4 mr-2" />
+          Acessar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default HomePage;

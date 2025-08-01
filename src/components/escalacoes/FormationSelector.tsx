@@ -1,26 +1,30 @@
-import React, { useState } from 'react';
-import { Info, Check } from 'lucide-react';
-import { FORMATIONS, Formation, getPositionsByType } from '@/types/formations';
-import { PLAYER_POSITIONS } from '@/types/squad';
+import React, { useState } from "react";
+
+import { Check, Info } from "lucide-react";
+
+import { PLAYER_POSITIONS } from "@/types/squad";
+import { Formation, FORMATIONS, getPositionsByType } from "@/types/formations";
 
 interface FormationSelectorProps {
   selectedFormation: Formation | null;
   onFormationSelect: (formation: Formation) => void;
 }
 
-const FormationSelector: React.FC<FormationSelectorProps> = ({ 
-  selectedFormation, 
-  onFormationSelect 
+const FormationSelector: React.FC<FormationSelectorProps> = ({
+  selectedFormation,
+  onFormationSelect,
 }) => {
-  const [hoveredFormation, setHoveredFormation] = useState<Formation | null>(null);
+  const [hoveredFormation, setHoveredFormation] = useState<Formation | null>(
+    null
+  );
 
-  const FormationPreview: React.FC<{ formation: Formation; isSelected?: boolean; isHovered?: boolean }> = ({ 
-    formation, 
-    isSelected = false,
-    isHovered = false 
-  }) => {
+  const FormationPreview: React.FC<{
+    formation: Formation;
+    isSelected?: boolean;
+    isHovered?: boolean;
+  }> = ({ formation, isSelected = false, isHovered = false }) => {
     const scale = 0.8; // Escala menor para preview
-    
+
     return (
       <div className="relative w-32 h-48 bg-green-100 rounded-lg overflow-hidden border-2 border-green-200">
         {/* Campo de futebol simplificado */}
@@ -28,7 +32,7 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
           {/* Linhas do campo */}
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-px h-full bg-green-300"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-green-300 rounded-full"></div>
-          
+
           {/* Área do goleiro */}
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-6 border-t border-l border-r border-green-300"></div>
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-3 border-t border-l border-r border-green-300"></div>
@@ -39,14 +43,17 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
           <div
             key={position.id}
             className={`absolute w-3 h-3 rounded-full transform -translate-x-1/2 -translate-y-1/2 ${
-              position.position === 'GOL' ? 'bg-yellow-500' :
-              position.position === 'DEF' ? 'bg-blue-500' :
-              position.position === 'MEI' ? 'bg-green-600' :
-              'bg-red-500'
+              position.position === "GOL"
+                ? "bg-yellow-500"
+                : position.position === "DEF"
+                ? "bg-blue-500"
+                : position.position === "MEI"
+                ? "bg-green-600"
+                : "bg-red-500"
             }`}
             style={{
               left: `${position.x * scale}%`,
-              top: `${(100 - position.y) * scale + 10}%`
+              top: `${(100 - position.y) * scale + 10}%`,
             }}
           />
         ))}
@@ -68,10 +75,10 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
 
   const getFormationStats = (formation: Formation) => {
     const stats = {
-      GOL: getPositionsByType(formation, 'GOL').length,
-      DEF: getPositionsByType(formation, 'DEF').length,
-      MEI: getPositionsByType(formation, 'MEI').length,
-      ATA: getPositionsByType(formation, 'ATA').length
+      GOL: getPositionsByType(formation, "GOL").length,
+      DEF: getPositionsByType(formation, "DEF").length,
+      MEI: getPositionsByType(formation, "MEI").length,
+      ATA: getPositionsByType(formation, "ATA").length,
     };
     return stats;
   };
@@ -99,9 +106,9 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
             <div
               key={formation.id}
               className={`bg-white rounded-xl border-2 p-4 cursor-pointer transition-all hover:shadow-lg ${
-                isSelected 
-                  ? 'border-red-500 shadow-lg' 
-                  : 'border-gray-200 hover:border-red-300'
+                isSelected
+                  ? "border-red-500 shadow-lg"
+                  : "border-gray-200 hover:border-red-300"
               }`}
               onClick={() => onFormationSelect(formation)}
               onMouseEnter={() => setHoveredFormation(formation)}
@@ -109,8 +116,8 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
             >
               {/* Preview da formação */}
               <div className="flex justify-center mb-3">
-                <FormationPreview 
-                  formation={formation} 
+                <FormationPreview
+                  formation={formation}
                   isSelected={isSelected}
                   isHovered={isHovered}
                 />
@@ -130,19 +137,27 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
               <div className="grid grid-cols-4 gap-1 text-xs">
                 <div className="text-center">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-1"></div>
-                  <span className="font-display-medium text-gray-600">{stats.GOL}</span>
+                  <span className="font-display-medium text-gray-600">
+                    {stats.GOL}
+                  </span>
                 </div>
                 <div className="text-center">
                   <div className="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-1"></div>
-                  <span className="font-display-medium text-gray-600">{stats.DEF}</span>
+                  <span className="font-display-medium text-gray-600">
+                    {stats.DEF}
+                  </span>
                 </div>
                 <div className="text-center">
                   <div className="w-3 h-3 bg-green-600 rounded-full mx-auto mb-1"></div>
-                  <span className="font-display-medium text-gray-600">{stats.MEI}</span>
+                  <span className="font-display-medium text-gray-600">
+                    {stats.MEI}
+                  </span>
                 </div>
                 <div className="text-center">
                   <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-1"></div>
-                  <span className="font-display-medium text-gray-600">{stats.ATA}</span>
+                  <span className="font-display-medium text-gray-600">
+                    {stats.ATA}
+                  </span>
                 </div>
               </div>
             </div>
@@ -157,7 +172,7 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
             <div className="flex-shrink-0">
               <FormationPreview formation={selectedFormation} isSelected />
             </div>
-            
+
             <div className="flex-1">
               <h4 className="text-lg font-display-semibold text-gray-800 mb-2">
                 {selectedFormation.displayName}
@@ -169,19 +184,31 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
               {/* Detalhes das posições */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(PLAYER_POSITIONS).map(([key, label]) => {
-                  const count = getPositionsByType(selectedFormation, key as any).length;
+                  const count = getPositionsByType(
+                    selectedFormation,
+                    key as any
+                  ).length;
                   if (count === 0) return null;
 
                   return (
                     <div key={key} className="text-center">
-                      <div className={`w-4 h-4 rounded-full mx-auto mb-1 ${
-                        key === 'GOL' ? 'bg-yellow-500' :
-                        key === 'DEF' ? 'bg-blue-500' :
-                        key === 'MEI' ? 'bg-green-600' :
-                        'bg-red-500'
-                      }`}></div>
-                      <p className="text-sm font-display-medium text-gray-800">{count}</p>
-                      <p className="text-xs text-gray-600 font-display">{label}</p>
+                      <div
+                        className={`w-4 h-4 rounded-full mx-auto mb-1 ${
+                          key === "GOL"
+                            ? "bg-yellow-500"
+                            : key === "DEF"
+                            ? "bg-blue-500"
+                            : key === "MEI"
+                            ? "bg-green-600"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                      <p className="text-sm font-display-medium text-gray-800">
+                        {count}
+                      </p>
+                      <p className="text-xs text-gray-600 font-display">
+                        {label}
+                      </p>
                     </div>
                   );
                 })}
@@ -195,7 +222,9 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center mb-3">
           <Info className="w-4 h-4 text-gray-500 mr-2" />
-          <span className="text-sm font-display-medium text-gray-700">Legenda das Posições</span>
+          <span className="text-sm font-display-medium text-gray-700">
+            Legenda das Posições
+          </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div className="flex items-center">
@@ -221,4 +250,3 @@ const FormationSelector: React.FC<FormationSelectorProps> = ({
 };
 
 export default FormationSelector;
-

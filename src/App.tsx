@@ -1,6 +1,5 @@
-import React from 'react';
 import { useAuth } from '@/contexts';
-import LoginForm from '@/components/auth/LoginForm';
+import LoginForm from '@/components/admin/auth/LoginForm';
 import HomePage from '@/components/layout/HomePage';
 import './App.css';
 

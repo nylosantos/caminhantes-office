@@ -11,11 +11,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'maskable.png'],
       manifest: {
         name: 'Caminhantes Office',
-        short_name: 'CaminhantesPWA',
-        description: 'Aplicativo de administração para escalações e aplicações do Caminhantes',
+        short_name: 'Caminhantes Office',
+        description: 'Aplicativo de administração do Caminhantes',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
@@ -24,19 +24,30 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/256x256.png',
+            sizes: '256x256',
+            type: 'image/png'
+          },
+          {
+            src: '/384x384.png',
+            sizes: '384x384',
+            type: 'image/png'
+          },
+          {
+            src: '/512x512.png',
             sizes: '512x512',
             type: 'image/png'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB por exemplo
       }
     })
   ],
@@ -44,6 +55,9 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 2000, // ou outro valor em kB
   },
   server: {
     host: '0.0.0.0',
