@@ -229,7 +229,7 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
             transform: `translate(-50%, -50%)`,
             zIndex: logoAndTrophyZIndex,
             // Máscara condicional para a logo da casa
-            ...(selectedMatch.fixture.status.short === 'FT' &&
+            ...(selectedMatch.fixture.status.long === 'Match Finished' &&
               ({
                 maskImage: `linear-gradient(to right,
                   rgba(0,0,0,1) ${100 - logoFadePercentage}%,
@@ -269,7 +269,7 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
             transform: `translate(-50%, -50%)`,
             zIndex: logoAndTrophyZIndex,
             // Máscara condicional para a logo de fora
-            ...(selectedMatch.fixture.status.short === 'FT' &&
+            ...(selectedMatch.fixture.status.long === 'Match Finished' &&
               ({
                 maskImage: `linear-gradient(to right,
                   rgba(0,0,0,0) 0%,
@@ -286,7 +286,7 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
         />
       )}
       {/* Placar: VS para jogos não finalizados ou Gols para jogos finalizados */}
-      {selectedMatch.fixture.status.short !== 'FT' ? (
+      {selectedMatch.fixture.status.long !== 'Match Finished' ? (
         <p
           className="absolute text-[150px] font-placar-black text-white uppercase leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
@@ -297,15 +297,31 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
           VS
         </p>
       ) : (
-        <p
-          className="absolute text-[266px] font-placar-black text-white uppercase leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{
-            top: '65.7%',
-            zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
-          }}
-        >
-          {selectedMatch.goals.home}-{selectedMatch.goals.away}
-        </p>
+        <>
+          <p
+            className="absolute text-[266px] font-placar-black text-white uppercase leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              top: '65.7%',
+              zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
+            }}
+          >
+            {selectedMatch.goals.home}-{selectedMatch.goals.away}
+          </p>
+          {selectedMatch.fixture.status.short === 'PEN' &&
+            selectedMatch.score &&
+            selectedMatch.score.penalty && (
+              <p
+                className="absolute text-[40px] font-placar-black text-white leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2 mt-32"
+                style={{
+                  top: '65.7%',
+                  zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
+                }}
+              >
+                ({selectedMatch.score.penalty.home}-
+                {selectedMatch.score.penalty.away} pen.)
+              </p>
+            )}
+        </>
       )}
     </div>
   );

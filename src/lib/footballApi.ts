@@ -96,7 +96,7 @@ export const getLiverpoolRecentMatches = async (limit: number = 10) => {
     // API-Sports 'fixtures' endpoint: GET /fixtures
     // Parameters: team (ID), season (YYYY), status (FT - Full Time, AET - After Extra Time, PEN - Penalty Shootout, CANC - Cancelled, POST - Postponed, INT - Interrupted)
     // For recent, we generally look for 'FT' (Full Time)
-    const url = `${API_BASE_URL}/fixtures?team=${LIVERPOOL_TEAM_ID}&season=${currentYear}&status=FT&timezone=Europe%2FLondon`;
+    const url = `${API_BASE_URL}/fixtures?team=${LIVERPOOL_TEAM_ID}&season=${currentYear}&timezone=Europe%2FLondon`;
     const res = await fetchData<{ response: Match[] }>(url);
 
     if (res.success && res.data) {
@@ -105,7 +105,7 @@ export const getLiverpoolRecentMatches = async (limit: number = 10) => {
       const filteredMatches = games
         .filter(match => {
           const matchDate = new Date(match.fixture.date);
-          return matchDate <= today && matchDate >= pastDate;
+          return matchDate <= today && matchDate >= pastDate && match.fixture.status.long === 'Match Finished';
         })
         .sort((a, b) => new Date(b.fixture.date).getTime() - new Date(a.fixture.date).getTime()) // Sort by date descending
         .slice(0, limit); // Apply limit after filtering and sorting

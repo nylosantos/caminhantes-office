@@ -56,6 +56,12 @@ export interface Match {
     }
   };
   goals: { home: number; away: number };
+  score?: {
+    halftime?: { home: number; away: number },
+    fulltime?: { home: number; away: number },
+    extratime?: { home: number; away: number },
+    penalty?: { home: number; away: number },
+  }
   league: {
     id: number
     name: string

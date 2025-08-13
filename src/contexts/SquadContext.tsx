@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, doc, setDoc, getDocs, deleteDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { uploadToImgBB } from '@/lib/imgbb';
 import { Player, PlayerFormData, INITIAL_LIVERPOOL_SQUAD } from '@/types/squad';
@@ -8,15 +15,28 @@ import { useAuth } from './AuthContext';
 interface SquadContextType {
   players: Player[];
   loading: boolean;
-  addPlayer: (playerData: PlayerFormData) => Promise<{ success: boolean; error?: string }>;
-  updatePlayer: (playerId: string, playerData: PlayerFormData) => Promise<{ success: boolean; error?: string }>;
-  deletePlayer: (playerId: string) => Promise<{ success: boolean; error?: string }>;
+  addPlayer: (
+    playerData: PlayerFormData
+  ) => Promise<{ success: boolean; error?: string }>;
+  updatePlayer: (
+    playerId: string,
+    playerData: PlayerFormData
+  ) => Promise<{ success: boolean; error?: string }>;
+  deletePlayer: (
+    playerId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   getPlayersByPosition: (position: string) => Player[];
   isNumberTaken: (number: string, excludeId?: string) => boolean;
   initializeSquad: () => Promise<{ success: boolean; error?: string }>;
   refreshSquad: () => Promise<void>;
-  uploadPlayerImage: (playerId: string, imageFile: File) => Promise<{ success: boolean; imageUrl?: string; error?: string }>;
-  removePlayerImage: (playerId: string, imageUrl: string) => Promise<{ success: boolean; error?: string }>;
+  uploadPlayerImage: (
+    playerId: string,
+    imageFile: File
+  ) => Promise<{ success: boolean; imageUrl?: string; error?: string }>;
+  removePlayerImage: (
+    playerId: string,
+    imageUrl: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const SquadContext = createContext<SquadContextType | undefined>(undefined);
@@ -29,7 +49,9 @@ export const useSquad = () => {
   return context;
 };
 
-export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
@@ -40,7 +62,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLoading(true);
       const playersRef = collection(db, 'squad');
       const snapshot = await getDocs(playersRef);
-      
+
       const squadPlayers: Player[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -51,25 +73,26 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           position: data.position,
           imgUrl: data.imgUrl || [],
           createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
+          updatedAt: data.updatedAt?.toDate() || new Date(),
         });
       });
-      
+
       // Ordenar por posição primeiro, depois por número
       squadPlayers.sort((a, b) => {
         // Definir ordem das posições
-        const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
-        
+        const positionOrder = { GOL: 1, DEF: 2, MEI: 3, ATA: 4 };
+
         // Primeiro critério: posição
-        const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+        const positionDiff =
+          positionOrder[a.position] - positionOrder[b.position];
         if (positionDiff !== 0) {
           return positionDiff;
         }
-        
+
         // Segundo critério: número
         return parseInt(a.number) - parseInt(b.number);
       });
-      
+
       setPlayers(squadPlayers);
     } catch (error) {
       console.error('Erro ao carregar elenco:', error);
@@ -79,7 +102,9 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Adicionar novo jogador
-  const addPlayer = async (playerData: PlayerFormData): Promise<{ success: boolean; error?: string }> => {
+  const addPlayer = async (
+    playerData: PlayerFormData
+  ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) {
       return { success: false, error: 'Usuário não autenticado' };
     }
@@ -92,20 +117,23 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Verificar se número já existe
     if (isNumberTaken(playerData.number)) {
-      return { success: false, error: `Número ${playerData.number} já está em uso` };
+      return {
+        success: false,
+        error: `Número ${playerData.number} já está em uso`,
+      };
     }
 
     try {
       const docRef = doc(collection(db, 'squad'));
       const now = new Date();
-      
+
       await setDoc(docRef, {
         name: playerData.name.trim(),
         number: playerData.number.trim(),
         position: playerData.position,
         imgUrl: [],
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
       });
 
       // Atualizar estado local
@@ -116,15 +144,16 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         position: playerData.position,
         imgUrl: [],
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
       };
 
-      setPlayers(prev => {
+      setPlayers((prev) => {
         const updated = [...prev, newPlayer];
         // Ordenar por posição primeiro, depois por número
         return updated.sort((a, b) => {
-          const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
-          const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+          const positionOrder = { GOL: 1, DEF: 2, MEI: 3, ATA: 4 };
+          const positionDiff =
+            positionOrder[a.position] - positionOrder[b.position];
           if (positionDiff !== 0) {
             return positionDiff;
           }
@@ -140,7 +169,10 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Atualizar jogador
-  const updatePlayer = async (playerId: string, playerData: PlayerFormData): Promise<{ success: boolean; error?: string }> => {
+  const updatePlayer = async (
+    playerId: string,
+    playerData: PlayerFormData
+  ): Promise<{ success: boolean; error?: string }> => {
     // Validar dados
     const validation = validatePlayerData(playerData);
     if (!validation.valid) {
@@ -149,38 +181,42 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Verificar se número já existe (excluindo o próprio jogador)
     if (isNumberTaken(playerData.number, playerId)) {
-      return { success: false, error: `Número ${playerData.number} já está em uso` };
+      return {
+        success: false,
+        error: `Número ${playerData.number} já está em uso`,
+      };
     }
 
     try {
       const playerRef = doc(db, 'squad', playerId);
       const now = new Date();
-      
+
       await updateDoc(playerRef, {
         name: playerData.name.trim(),
         number: playerData.number.trim(),
         position: playerData.position,
-        updatedAt: now
+        updatedAt: now,
       });
 
       // Atualizar estado local
-      setPlayers(prev => {
-        const updated = prev.map(player => 
-          player.id === playerId 
-            ? { 
-                ...player, 
+      setPlayers((prev) => {
+        const updated = prev.map((player) =>
+          player.id === playerId
+            ? {
+                ...player,
                 name: playerData.name.trim(),
                 number: playerData.number.trim(),
                 position: playerData.position,
-                updatedAt: now 
+                updatedAt: now,
               }
             : player
         );
-        
+
         // Ordenar por posição primeiro, depois por número
         return updated.sort((a, b) => {
-          const positionOrder = { 'GOL': 1, 'DEF': 2, 'MEI': 3, 'ATA': 4 };
-          const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+          const positionOrder = { GOL: 1, DEF: 2, MEI: 3, ATA: 4 };
+          const positionDiff =
+            positionOrder[a.position] - positionOrder[b.position];
           if (positionDiff !== 0) {
             return positionDiff;
           }
@@ -196,12 +232,14 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Deletar jogador
-  const deletePlayer = async (playerId: string): Promise<{ success: boolean; error?: string }> => {
+  const deletePlayer = async (
+    playerId: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       await deleteDoc(doc(db, 'squad', playerId));
 
       // Atualizar estado local
-      setPlayers(prev => prev.filter(player => player.id !== playerId));
+      setPlayers((prev) => prev.filter((player) => player.id !== playerId));
 
       return { success: true };
     } catch (error) {
@@ -211,45 +249,56 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Upload de imagem do jogador
-  const uploadPlayerImage = async (playerId: string, imageFile: File): Promise<{ success: boolean; imageUrl?: string; error?: string }> => {
+  const uploadPlayerImage = async (
+    playerId: string,
+    imageFile: File
+  ): Promise<{ success: boolean; imageUrl?: string; error?: string }> => {
     if (!currentUser) {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
-    const player = players.find(p => p.id === playerId);
+    const player = players.find((p) => p.id === playerId);
     if (!player) {
       return { success: false, error: 'Jogador não encontrado' };
     }
 
     // Verificar se já tem 2 imagens
     if (player.imgUrl && player.imgUrl.length >= 2) {
-      return { success: false, error: 'Jogador já possui o máximo de 2 imagens' };
+      return {
+        success: false,
+        error: 'Jogador já possui o máximo de 2 imagens',
+      };
     }
 
     try {
       // Upload para ImgBB
       const uploadResult = await uploadToImgBB(imageFile);
-      
+
       if (!uploadResult.success || !uploadResult.url) {
-        return { success: false, error: uploadResult.error || 'Erro no upload da imagem' };
+        return {
+          success: false,
+          error: uploadResult.error || 'Erro no upload da imagem',
+        };
       }
 
       // Atualizar no Firestore
       const playerRef = doc(db, 'squad', playerId);
       const currentImages = player.imgUrl || [];
       const updatedImages = [...currentImages, uploadResult.url];
-      
+
       await updateDoc(playerRef, {
         imgUrl: updatedImages,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       // Atualizar estado local
-      setPlayers(prev => prev.map(p => 
-        p.id === playerId 
-          ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
-          : p
-      ));
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.id === playerId
+            ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
+            : p
+        )
+      );
 
       return { success: true, imageUrl: uploadResult.url };
     } catch (error) {
@@ -259,12 +308,15 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Remover imagem do jogador
-  const removePlayerImage = async (playerId: string, imageUrl: string): Promise<{ success: boolean; error?: string }> => {
+  const removePlayerImage = async (
+    playerId: string,
+    imageUrl: string
+  ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
-    const player = players.find(p => p.id === playerId);
+    const player = players.find((p) => p.id === playerId);
     if (!player) {
       return { success: false, error: 'Jogador não encontrado' };
     }
@@ -272,21 +324,23 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       // Remover URL da lista
       const currentImages = player.imgUrl || [];
-      const updatedImages = currentImages.filter(url => url !== imageUrl);
-      
+      const updatedImages = currentImages.filter((url) => url !== imageUrl);
+
       // Atualizar no Firestore
       const playerRef = doc(db, 'squad', playerId);
       await updateDoc(playerRef, {
         imgUrl: updatedImages,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       // Atualizar estado local
-      setPlayers(prev => prev.map(p => 
-        p.id === playerId 
-          ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
-          : p
-      ));
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.id === playerId
+            ? { ...p, imgUrl: updatedImages, updatedAt: new Date() }
+            : p
+        )
+      );
 
       return { success: true };
     } catch (error) {
@@ -297,25 +351,28 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Buscar jogadores por posição
   const getPlayersByPosition = (position: string): Player[] => {
-    return players.filter(player => player.position === position);
+    return players.filter((player) => player.position === position);
   };
 
   // Verificar se número já está em uso
   const isNumberTaken = (number: string, excludeId?: string): boolean => {
-    return players.some(player => 
-      player.number === number.trim() && player.id !== excludeId
+    return players.some(
+      (player) => player.number === number.trim() && player.id !== excludeId
     );
   };
 
   // Inicializar elenco com dados padrão
-  const initializeSquad = async (): Promise<{ success: boolean; error?: string }> => {
+  const initializeSquad = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
     if (!currentUser) {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
     try {
       setLoading(true);
-      
+
       // Verificar se já existe elenco
       if (players.length > 0) {
         return { success: false, error: 'Elenco já foi inicializado' };
@@ -331,7 +388,7 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ...playerData,
             imgUrl: [],
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
           })
         );
       }
@@ -354,7 +411,9 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Validar dados do jogador
-  const validatePlayerData = (data: PlayerFormData): { valid: boolean; error?: string } => {
+  const validatePlayerData = (
+    data: PlayerFormData
+  ): { valid: boolean; error?: string } => {
     if (!data.name.trim()) {
       return { valid: false, error: 'Nome é obrigatório' };
     }
@@ -394,13 +453,10 @@ export const SquadProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     initializeSquad,
     refreshSquad,
     uploadPlayerImage,
-    removePlayerImage
+    removePlayerImage,
   };
 
   return (
-    <SquadContext.Provider value={value}>
-      {children}
-    </SquadContext.Provider>
+    <SquadContext.Provider value={value}>{children}</SquadContext.Provider>
   );
 };
-
