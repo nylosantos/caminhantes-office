@@ -37,7 +37,6 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
   logoOffset = 50,
   logoFadePercentage = 70, // Default para 20%
 }) => {
-  console.log(homeScore, homePenScore, awayScore, awayPenScore);
   const [trophyImage, setTrophyImage] = useState<TrophyProps>();
   const parentFadePcnt = `${parentFadePercentage}%`;
   const childFadePcnt = `${childFadePercentage}%`;

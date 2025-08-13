@@ -1304,6 +1304,8 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
                   translations={translations}
                   playerName={generatorData.goal?.scorer?.name}
                   substitutions={generatorData.substitutions}
+                  homeGoals={generatorData.homeScore}
+                  awayGoals={generatorData.awayScore}
                 />
               )}
               <div className="flex flex-wrap justify-center space-x-4 gap-2">
