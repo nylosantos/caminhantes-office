@@ -628,6 +628,7 @@ interface MatchSelectorProps {
   onValidationChange: (isValid: boolean) => void;
   translations: RoundTranslationsDocument[];
   pastMatches?: boolean;
+  includeTheOne?: boolean;
 }
 
 const MatchSelector: React.FC<
@@ -640,6 +641,7 @@ const MatchSelector: React.FC<
       onValidationChange,
       translations,
       pastMatches = false,
+      includeTheOne = false,
     },
     ref
   ) => {
@@ -697,14 +699,79 @@ const MatchSelector: React.FC<
       loadMatches();
     }, []);
 
+    // const loadMatches = async () => {
+    //   setLoading(true);
+    //   setError(null);
+
+    //   try {
+    //     let result;
+    //     if (pastMatches) {
+    //       result = await getPastMatches();
+    //       if (
+    //         !result.success ||
+    //         !result.matches ||
+    //         result.matches.length === 0
+    //       ) {
+    //         result = await getUpcomingMatches();
+    //       }
+    //     } else {
+    //       result = await getUpcomingMatches();
+    //       if (
+    //         !result.success ||
+    //         !result.matches ||
+    //         result.matches.length === 0
+    //       ) {
+    //         result = await getPastMatches();
+    //       }
+    //     }
+
+    //     if (result.success && result.matches && result.matches.length > 0) {
+    //       setMatches(result.matches);
+    //     } else {
+    //       setError(
+    //         'Não foi possível carregar partidas da API. Use o modo manual.'
+    //       );
+    //       setManualMode(true);
+    //     }
+    //   } catch (err) {
+    //     console.error('Erro ao carregar partidas:', err);
+    //     setError('Erro ao conectar com a API de partidas. Use o modo manual.');
+    //     setManualMode(true);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
     const loadMatches = async () => {
       setLoading(true);
       setError(null);
 
       try {
         let result;
+
         if (pastMatches) {
+          // Busca partidas passadas
           result = await getPastMatches();
+
+          // Se for pra incluir o próximo jogo também
+          if (includeTheOne) {
+            const upcoming = await getUpcomingMatches();
+            if (
+              upcoming.success &&
+              upcoming.matches &&
+              upcoming.matches.length > 0
+            ) {
+              // Pega só o mais próximo
+              const nextMatch = upcoming.matches.sort(
+                (a, b) =>
+                  new Date(a.fixture.date).getTime() -
+                  new Date(b.fixture.date).getTime()
+              )[0];
+              result.matches = [nextMatch, ...(result.matches || [])];
+            }
+          }
+
+          // Se não encontrou nada, tenta as próximas
           if (
             !result.success ||
             !result.matches ||
@@ -713,6 +780,7 @@ const MatchSelector: React.FC<
             result = await getUpcomingMatches();
           }
         } else {
+          // Caso não seja partidas passadas, tenta só as próximas
           result = await getUpcomingMatches();
           if (
             !result.success ||
@@ -908,17 +976,17 @@ const MatchSelector: React.FC<
                     return (
                       <div
                         key={match.fixture.id}
-                        className={`border rounded-lg p-4 transition-all flex items-center justify-between ${
+                        className={`border rounded-lg p-4 transition-all flex relative items-center justify-between ${
                           isSelected
                             ? 'border-red-500 bg-red-50'
                             : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
                         }`}
                       >
                         <div
-                          className="flex-1 cursor-pointer"
+                          className="flex-1 relative cursor-pointer"
                           onClick={() => handleMatchSelect(match)}
                         >
-                          <div className="flex items-center space-x-4 mb-2">
+                          <div className="flex justify-center md:justify-start items-center space-x-4 mb-2">
                             <div className="flex items-center space-x-2">
                               <img
                                 src={match.teams.home.logo}
@@ -929,8 +997,10 @@ const MatchSelector: React.FC<
                                 {match.teams.home.name}
                               </span>
                             </div>
-                            {pastMatches ? (
-                              <strong className="text-gray-500 font-bold">
+                            {pastMatches &&
+                            match.goals.home != null &&
+                            match.goals.away != null ? (
+                              <strong className="text-gray-500 font-bold w-fit whitespace-nowrap">
                                 {`${match.goals.home}-${match.goals.away}`}
                               </strong>
                             ) : (
@@ -948,9 +1018,33 @@ const MatchSelector: React.FC<
                                 className="w-6 h-6 object-contain"
                               />
                             </div>
+                            {/* Ícone de próxima partida */}
+                            {pastMatches &&
+                              match.goals.home === null &&
+                              match.goals.away === null && (
+                                <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 text-red-600 text-[10px] bg-white rounded-full shadow-md px-2 py-0.5">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                    />
+                                  </svg>
+                                  <span className="font-medium">
+                                    Próxima partida
+                                  </span>
+                                </div>
+                              )}
                           </div>
 
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <div className="flex flex-col md:flex-row items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 mr-1" />
                               <span className="font-display">
@@ -974,8 +1068,8 @@ const MatchSelector: React.FC<
                         </div>
 
                         {isSelected && (
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="w-5 h-5 text-red-600" />
+                          <div className="flex absolute -right-1 flex-col justify-between h-full items-center space-x-2">
+                            <CheckCircle className="w-5 h-5 text-red-600 pt-1 mr-1" />
                             <Button
                               variant="ghost"
                               size="icon"
@@ -983,7 +1077,7 @@ const MatchSelector: React.FC<
                                 e.stopPropagation();
                                 handleEditMatch(match);
                               }}
-                              className="text-gray-600 hover:text-red-600 cursor-pointer"
+                              className="text-gray-600 hover:text-red-600 hover:bg-transparent cursor-pointer pt-2"
                               title="Editar partida"
                             >
                               <Pencil className="w-4 h-4" />

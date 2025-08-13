@@ -723,7 +723,13 @@ const NextGameGenerator: React.FC<NextGameGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              awayPenScore={null}
+              awayScore={null}
+              homePenScore={null}
+              homeScore={null}
+            />
           </div>
         </div>
       )}
@@ -891,7 +897,7 @@ const NextGameGenerator: React.FC<NextGameGeneratorProps> = ({
                   translations={translations}
                 />
               )}
-              <div className="flex justify-center space-x-4">
+              <div className="flex flex-wrap justify-center space-x-4 gap-2">
                 <Button
                   onClick={redrawAllLayers}
                   disabled={generating}

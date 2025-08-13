@@ -116,7 +116,7 @@ const initialImageGeneratorConfigs: Record<
     playerNumberY: 300,
     playerNumberSize: 1,
     // Configurações para substituições
-    substitutionsX: 100,
+    substitutionsX: 175,
     substitutionsY: 200,
     substitutionsWidth: 880,
     substitutionsHeight: 400,
@@ -147,8 +147,8 @@ const initialImageGeneratorConfigs: Record<
     playerNumberY: 470,
     playerNumberSize: 1,
     // Configurações para substituições
-    substitutionsX: 100,
-    substitutionsY: 400,
+    substitutionsX: 190,
+    substitutionsY: 430,
     substitutionsWidth: 880,
     substitutionsHeight: 500,
   },
@@ -413,8 +413,8 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
       homeScore: matchData.goals?.home?.toString() || '',
       awayScore: matchData.goals?.away?.toString() || '',
       showPenalties: !!(
-        matchData.score?.penalty?.home !== undefined &&
-        matchData.score?.penalty?.away !== undefined
+        matchData.score?.penalty?.home != null &&
+        matchData.score?.penalty?.away != null
       ),
       homePenaltyScore: matchData.score?.penalty?.home?.toString() || '',
       awayPenaltyScore: matchData.score?.penalty?.away?.toString() || '',
@@ -630,32 +630,58 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
           ctx.textAlign = 'center';
           const text = `${generatorData.matchData.stadium.toUpperCase()} - ${generatorData.matchData.competitionRound.toUpperCase()}`;
           ctx.fillText(text, config.stadiumTextX, config.stadiumTextY);
-        } else if (key === 'jogador' && generatorData.goal?.scorerImageUrl) {
+        } else if (key === 'jogador' && generatorData.artType === 'GOL') {
           console.log(
             `👤 drawLayer [${generatorData.goal?.scorerImageUrl}]: Renderizando imagem do jogador`
           );
-          try {
-            const jogadorImg = await loadImage(
-              generatorData.goal.scorerImageUrl
-            );
-            const aspect = 1062 / 666;
-            const width = config.jogadorSize || 900;
-            const height = width * aspect;
-            ctx.drawImage(
-              jogadorImg,
-              config.jogadorX || 0,
-              config.jogadorY || 0,
-              width,
-              height
-            );
-            console.log(
-              `✅ drawLayer [${generatorData.goal?.scorerImageUrl}]: Imagem do jogador renderizada`
-            );
-          } catch (e) {
-            console.error(
-              `❌ drawLayer [${generatorData.goal?.scorerImageUrl}]: Erro ao renderizar imagem do jogador`,
-              e
-            );
+          if (generatorData.goal?.scorerImageUrl) {
+            try {
+              const jogadorImg = await loadImage(
+                generatorData.goal.scorerImageUrl
+              );
+              const aspect = 1062 / 666;
+              const width = config.jogadorSize || 900;
+              const height = width * aspect;
+              ctx.drawImage(
+                jogadorImg,
+                config.jogadorX || 0,
+                config.jogadorY || 0,
+                width,
+                height
+              );
+              console.log(
+                `✅ drawLayer [${generatorData.goal?.scorerImageUrl}]: Imagem do jogador renderizada`
+              );
+            } catch (e) {
+              console.error(
+                `❌ drawLayer [${generatorData.goal?.scorerImageUrl}]: Erro ao renderizar imagem do jogador`,
+                e
+              );
+            }
+          } else {
+            try {
+              const jogadorImg = await loadImage(
+                'https://i.ibb.co/zHQTjFZ2/Mighty-Red-png.png'
+              );
+              const aspect = 1062 / 666;
+              const width = config.jogadorSize || 900;
+              const height = width * aspect;
+              ctx.drawImage(
+                jogadorImg,
+                config.jogadorX || 0,
+                config.jogadorY || 0,
+                width,
+                height
+              );
+              console.log(
+                `✅ drawLayer [${generatorData.goal?.scorerImageUrl}]: Imagem do Mighty Red renderizada`
+              );
+            } catch (e) {
+              console.error(
+                `❌ drawLayer [${generatorData.goal?.scorerImageUrl}]: Erro ao renderizar imagem do Mighty Red`,
+                e
+              );
+            }
           }
         } else if (key === 'nome' && generatorData.goal?.scorer) {
           console.log(
@@ -712,21 +738,44 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
           console.log(
             `🔄 drawLayer [substituições]: Renderizando ${generatorData.substitutions.length} substituições`
           );
-          // Desenhar substituições
-          // const scale = config.playerNumberSize || 1;
-          const subsX = config.substitutionsX || 100;
-          const subsY = config.substitutionsY || 200;
-          const lineHeight = 200;
 
-          ctx.fillStyle = colors.primary;
-          ctx.font = '600 44px "Funnel Display", Arial, sans-serif';
+          const subsX = config.substitutionsX || 175;
+          const subsY = config.substitutionsY || 200;
+          const boxTop = subsY;
+          const boxHeight = 600; // altura máxima da área
+          const enterYOffsetFactor = 1.3; // fator relativo para espaçamento entre linhas
+
+          // Fonte base
+          const baseFontSize = 44;
+          let fontSize = baseFontSize;
+
+          // Altura de linha baseada na fonte
+          let lineHeight = fontSize * 4.5; // ajuste conforme a sua tipografia
+          let enterYOffset = fontSize * enterYOffsetFactor;
+
+          // Ajustar fonte se não couber
+          const totalHeight = generatorData.substitutions.length * lineHeight;
+          if (totalHeight > boxHeight) {
+            const scaleFactor = boxHeight / totalHeight;
+            fontSize *= scaleFactor;
+            lineHeight *= scaleFactor;
+            enterYOffset *= scaleFactor;
+          }
+
+          // Calcula altura final do bloco e ponto inicial centralizado
+          const blockHeight =
+            generatorData.substitutions.length * lineHeight -
+            (lineHeight - enterYOffset);
+          const startY = boxTop + (boxHeight - blockHeight) / 2;
+
+          ctx.font = `600 ${fontSize}px "Funnel Display", Arial, sans-serif`;
           ctx.textAlign = 'left';
 
           generatorData.substitutions.forEach((sub, index) => {
             if (sub.playerOut && sub.playerIn) {
-              const y = subsY + index * lineHeight;
+              const y = startY + index * lineHeight;
 
-              // Desenhar seta vermelha (saiu)
+              // Seta vermelha (saiu)
               ctx.fillStyle = '#ef4444';
               ctx.fillText('←', subsX, y);
 
@@ -734,36 +783,27 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
               ctx.fillStyle = colors.primary;
               ctx.fillText(
                 `${sub.playerOut.name} (#${sub.playerOut.number})`,
-                subsX + 100,
+                subsX + fontSize * 2.3,
                 y
               );
 
-              // Desenhar seta verde (entrou)
-              const enterYOffset = 72; // Espaço vertical entre linhas (ajuste conforme necessário)
+              // Seta verde (entrou)
               ctx.fillStyle = '#22c55e';
               ctx.fillText('→', subsX, y + enterYOffset);
-              // ctx.fillText('→', subsX + 400, y);
 
               // Nome do jogador que entrou
               ctx.fillStyle = colors.primary;
               ctx.fillText(
                 `${sub.playerIn.name} (#${sub.playerIn.number})`,
-                subsX + 100,
+                subsX + fontSize * 2.3,
                 y + enterYOffset
-              );
-              // ctx.fillText(
-              //   `${sub.playerIn.name} (#${sub.playerIn.number})`,
-              //   subsX + 440,
-              //   y
-              // );
-
-              console.log(
-                `✅ drawLayer [substituições]: Substituição ${
-                  index + 1
-                } renderizada: ${sub.playerOut.name} → ${sub.playerIn.name}`
               );
             }
           });
+
+          // Caixa para debug visual
+          // ctx.strokeStyle = 'rgb(255, 251, 0)';
+          // ctx.strokeRect(subsX - 50, boxTop, 800, boxHeight);
         }
       }
     },
@@ -1007,7 +1047,25 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              awayPenScore={
+                generatorData.awayPenaltyScore === ''
+                  ? null
+                  : +generatorData.awayPenaltyScore
+              }
+              awayScore={
+                generatorData.awayScore === '' ? null : +generatorData.awayScore
+              }
+              homePenScore={
+                generatorData.homePenaltyScore === ''
+                  ? null
+                  : +generatorData.homePenaltyScore
+              }
+              homeScore={
+                generatorData.homeScore === '' ? null : +generatorData.homeScore
+              }
+            />
           </div>
         </div>
       )}
@@ -1035,6 +1093,7 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
               onValidationChange={setStep1Valid}
               translations={translations}
               pastMatches
+              includeTheOne
             />
           )}
           {currentStep === 2 && (
@@ -1247,7 +1306,7 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
                   substitutions={generatorData.substitutions}
                 />
               )}
-              <div className="flex justify-center space-x-4">
+              <div className="flex flex-wrap justify-center space-x-4 gap-2">
                 <Button
                   onClick={redrawAllLayers}
                   disabled={generating}

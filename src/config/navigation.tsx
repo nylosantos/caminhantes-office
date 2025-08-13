@@ -268,115 +268,23 @@ export interface NavItem {
 }
 
 export const navigationItems: NavItem[] = [
-  // {
-  //   id: 'admin',
-  //   title: 'Administração',
-  //   description: 'Gerenciar usuários e configurações do sistema',
-  //   icon: <Settings className="w-8 h-8 text-purple-600" />,
-  //   lucideIcon: Settings,
-  //   roles: ['root'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-purple-200',
-  //     iconBg: 'bg-purple-100',
-  //     iconColor: 'text-purple-600',
-  //     button: 'bg-purple-600 hover:bg-purple-700',
-  //   },
-  // },
-  // {
-  //   id: 'escalacoes',
-  //   title: 'Escalações',
-  //   description: (userData) => {
-  //     const firstName = userData?.name?.split(' ')[0] || 'Usuário';
-  //     return `Crie escalações personalizadas, ${firstName}!`;
-  //   },
-  //   icon: <Users className="w-8 h-8 text-blue-600" />,
-  //   lucideIcon: Users,
-  //   roles: ['root', 'editor', 'user'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-blue-200',
-  //     iconBg: 'bg-blue-100',
-  //     iconColor: 'text-blue-600',
-  //     button: 'bg-blue-600 hover:bg-blue-700',
-  //   },
-  // },
-  // {
-  //   id: 'matchday',
-  //   title: 'Matchday',
-  //   description: 'Gere artes para o dia do jogo',
-  //   icon: <Calendar className="w-8 h-8 text-green-600" />,
-  //   lucideIcon: Calendar,
-  //   roles: ['root', 'editor'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-green-200',
-  //     iconBg: 'bg-green-100',
-  //     iconColor: 'text-green-600',
-  //     button: 'bg-green-600 hover:bg-green-700',
-  //   },
-  // },
-  // {
-  //   id: 'nextGame',
-  //   title: 'Próximo Jogo',
-  //   description: 'Crie artes para o próximo jogo',
-  //   icon: <Clock className="w-8 h-8 text-orange-600" />,
-  //   lucideIcon: Clock,
-  //   roles: ['root', 'editor'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-orange-200',
-  //     iconBg: 'bg-orange-100',
-  //     iconColor: 'text-orange-600',
-  //     button: 'bg-orange-600 hover:bg-orange-700',
-  //   },
-  // },
-  // {
-  //   id: 'motm',
-  //   title: 'Man of the Match',
-  //   description: 'Destaque o melhor jogador da partida',
-  //   icon: <Star className="w-8 h-8 text-yellow-600" />,
-  //   lucideIcon: Star,
-  //   roles: ['root', 'editor'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-yellow-200',
-  //     iconBg: 'bg-yellow-100',
-  //     iconColor: 'text-yellow-600',
-  //     button: 'bg-yellow-600 hover:bg-yellow-700',
-  //   },
-  // },
-  // {
-  //   id: 'fullTime',
-  //   title: 'Fim de Jogo',
-  //   description: 'Gere artes para o resultado final',
-  //   icon: <Trophy className="w-8 h-8 text-red-600" />,
-  //   lucideIcon: Trophy,
-  //   roles: ['root', 'editor'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-red-200',
-  //     iconBg: 'bg-red-100',
-  //     iconColor: 'text-red-600',
-  //     button: 'bg-red-600 hover:bg-red-700',
-  //   },
-  // },
-  // {
-  //   id: 'confronto',
-  //   title: 'Confronto',
-  //   description: 'Crie gráficos de confronto entre times',
-  //   icon: <BarChart3 className="w-8 h-8 text-indigo-600" />,
-  //   lucideIcon: BarChart3,
-  //   roles: ['root', 'editor'],
-  //   isCard: true,
-  //   colorClasses: {
-  //     border: 'border-indigo-200',
-  //     iconBg: 'bg-indigo-100',
-  //     iconColor: 'text-indigo-600',
-  //     button: 'bg-indigo-600 hover:bg-indigo-700',
-  //   },
-  // },
-
+  // Nova entrada para o GameArtGenerator
+  {
+    id: 'gameArt',
+    title: 'Artes do Jogo',
+    description:
+      'Crie artes para todos os momentos da partida: início, gols, substituições e mais',
+    icon: <Brush className="w-8 h-8 text-cyan-600" />,
+    lucideIcon: Brush,
+    roles: ['user', 'root', 'editor'],
+    isCard: true,
+    colorClasses: {
+      border: 'border-cyan-200',
+      iconBg: 'bg-cyan-100',
+      iconColor: 'text-cyan-600',
+      button: 'bg-cyan-600 hover:bg-cyan-700',
+    },
+  },
   {
     id: 'escalacoes',
     title: 'Gerador de Escalações',
@@ -468,23 +376,6 @@ export const navigationItems: NavItem[] = [
       iconBg: 'bg-pink-100',
       iconColor: 'text-pink-600',
       button: 'bg-pink-600 hover:bg-pink-700',
-    },
-  },
-  // Nova entrada para o GameArtGenerator
-  {
-    id: 'gameArt',
-    title: 'Artes do Jogo',
-    description:
-      'Crie artes para todos os momentos da partida: início, gols, substituições e mais',
-    icon: <Brush className="w-8 h-8 text-cyan-600" />,
-    lucideIcon: Brush,
-    roles: ['root', 'editor'],
-    isCard: true,
-    colorClasses: {
-      border: 'border-cyan-200',
-      iconBg: 'bg-cyan-100',
-      iconColor: 'text-cyan-600',
-      button: 'bg-cyan-600 hover:bg-cyan-700',
     },
   },
   {

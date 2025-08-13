@@ -595,7 +595,13 @@ const FullTimeGenerator: React.FC<FullTimeGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              awayPenScore={selectedMatch.score?.penalty?.away ?? null}
+              awayScore={selectedMatch.goals.away}
+              homePenScore={selectedMatch.score?.penalty?.home ?? null}
+              homeScore={selectedMatch.goals.home}
+            />
           </div>
         </div>
       )}
@@ -625,43 +631,6 @@ const FullTimeGenerator: React.FC<FullTimeGeneratorProps> = ({
               pastMatches
             />
           )}
-          {/* {currentStep === 2 && (
-            <GameArtSelector
-              onArtSelect={handleScoreImageSelect}
-              escalacaoData={{
-                ...generatorData,
-                formation: null,
-                selectedPlayers: {},
-                reservePlayers: [],
-                coach: '',
-              }}
-              setEscalacaoData={(update) =>
-                setGeneratorData((prev) => {
-                  let newState;
-                  if (typeof update === 'function') {
-                    const prevAsEscalacaoData: EscalacaoData = {
-                      ...prev,
-                      formation: null,
-                      selectedPlayers: {},
-                      reservePlayers: [],
-                      coach: '',
-                    };
-                    newState = update(prevAsEscalacaoData);
-                  } else {
-                    newState = update;
-                  }
-                  return {
-                    ...prev,
-                    gameArt:
-                      newState.gameArt !== undefined
-                        ? newState.gameArt
-                        : prev.gameArt,
-                  };
-                })
-              }
-              offPlayer
-            />
-          )} */}
           {currentStep === 2 && (
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6">
               <label
@@ -784,7 +753,7 @@ const FullTimeGenerator: React.FC<FullTimeGeneratorProps> = ({
                   translations={translations}
                 />
               )}
-              <div className="flex justify-center space-x-4">
+              <div className="flex flex-wrap justify-center space-x-4 gap-2">
                 <Button
                   onClick={redrawAllLayers}
                   disabled={generating}
