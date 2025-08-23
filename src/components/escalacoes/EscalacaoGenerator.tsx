@@ -855,168 +855,175 @@ const EscalacaoGenerator: React.FC<EscalacaoGeneratorProps> = ({
               </div>
             </div>
           )}
-          {currentStep === 5 && selectedMatch && (
-            <EscalacaoKonvaExample
-              escalacaoData={escalacaoData}
-              matchData={selectedMatch}
-            />
-            // <div className="space-y-6">
-            //   <div className="text-center">
-            //     <h3 className="text-xl font-display-bold text-gray-800 mb-2">
-            //       Gerar Escalação Final
-            //     </h3>
-            //     <p className="text-gray-600 font-display">
-            //       Ajuste os elementos e a ordem das camadas antes de gerar.
-            //     </p>
-            //   </div>
-            //   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            //     <div className="md:col-span-1 space-y-4">
-            //       <div>
-            //         <label className="block text-sm font-display-medium text-gray-700 mb-2">
-            //           Editar Imagem:
-            //         </label>
-            //         <select
-            //           value={activeImageType}
-            //           onChange={(e) =>
-            //             setActiveImageType(e.target.value as any)
-            //           }
-            //           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            //         >
-            //           <option value="quadrada">Quadrada</option>
-            //           <option value="vertical">Vertical</option>
-            //           <option value="horizontal">Horizontal</option>
-            //         </select>
-            //       </div>
-            //       <div>
-            //         <label className="block text-sm font-display-medium text-gray-700 mb-2">
-            //           Elemento a ser Movido:
-            //         </label>
-            //         <select
-            //           value={activeElementKey ?? ''}
-            //           onChange={(e) =>
-            //             setActiveElementKey(e.target.value || null)
-            //           }
-            //           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            //         >
-            //           <option value="">Nenhum</option>
-            //           {renderOrder.map((key) => (
-            //             <option
-            //               key={key}
-            //               value={key}
-            //               className="capitalize"
-            //             >
-            //               {key}
-            //             </option>
-            //           ))}
-            //         </select>
-            //       </div>
-            //       {activeElementKey && (
-            //         <PositionController
-            //           elementName={activeElementKey}
-            //           onMove={(axis, amount) =>
-            //             setConfigs((prev) => {
-            //               const newConfigs = JSON.parse(JSON.stringify(prev));
-            //               const key =
-            //                 `${activeElementKey}${axis.toUpperCase()}` as keyof EscalacaoConfig;
-            //               if (
-            //                 typeof newConfigs[activeImageType][key] === 'number'
-            //               ) {
-            //                 newConfigs[activeImageType][key] += amount;
-            //               }
-            //               return newConfigs;
-            //             })
-            //           }
-            //           onResize={(amount) =>
-            //             setConfigs((prev) => {
-            //               const newConfigs = JSON.parse(JSON.stringify(prev));
-            //               const key =
-            //                 `${activeElementKey}Size` as keyof EscalacaoConfig;
-            //               if (
-            //                 typeof newConfigs[activeImageType][key] === 'number'
-            //               ) {
-            //                 newConfigs[activeImageType][key] += amount;
-            //               }
-            //               return newConfigs;
-            //             })
-            //           }
-            //         />
-            //       )}
-            //       <div className="mt-4 pt-4 border-t">
-            //         <LayerManager
-            //           renderOrder={renderOrder}
-            //           setRenderOrder={setRenderOrder}
-            //         />
-            //       </div>
-            //     </div>
-            //     <div className="relative md:col-span-2 w-full flex justify-center items-center bg-gray-200 rounded-lg p-2">
-            //       <div
-            //         style={{
-            //           position: 'relative',
-            //           width: '100%',
-            //           paddingBottom: `${
-            //             (configs[activeImageType].canvasHeight /
-            //               configs[activeImageType].canvasWidth) *
-            //             100
-            //           }%`,
-            //         }}
-            //       >
-            //         {[canvasFundoRef, canvasInteracaoRef, canvasFrenteRef].map(
-            //           (ref, index) => (
-            //             <canvas
-            //               key={index}
-            //               ref={ref}
-            //               style={{
-            //                 position: 'absolute',
-            //                 top: 0,
-            //                 left: 0,
-            //                 width: '100%',
-            //                 height: '100%',
-            //                 zIndex: index + 1,
-            //               }}
-            //             />
-            //           )
-            //         )}
-            //       </div>
-            //     </div>
-            //   </div>
-            //   {selectedMatch && (
-            //     <PostTextGenerator
-            //       postType={'escalacao'}
-            //       match={selectedMatch}
-            //       translations={translations}
-            //       escalacaoOficial={officialLineUp}
-            //     />
-            //   )}
-            //   <div className="flex justify-center space-x-4">
-            //     <Button
-            //       onClick={redrawAllLayers}
-            //       disabled={generating}
-            //       className="bg-red-600 hover:bg-red-700 text-white cursor-pointer font-display-medium"
-            //     >
-            //       {generating ? (
-            //         <>
-            //           <Loader className="w-4 h-4 mr-2 animate-spin" />{' '}
-            //           Gerando...
-            //         </>
-            //       ) : (
-            //         <>
-            //           <ImageIcon className="w-4 h-4 mr-2" /> Gerar Imagem
-            //         </>
-            //       )}
-            //     </Button>
-            //     {downloadable && (
-            //       <Button
-            //         onClick={downloadEscalacao}
-            //         disabled={generating}
-            //         variant="outline"
-            //         className="cursor-pointer font-display-medium"
-            //       >
-            //         <Download className="w-4 h-4 mr-2" /> Download PNG
-            //       </Button>
-            //     )}
-            //   </div>
-            // </div>
-          )}
+          {currentStep === 5 &&
+            selectedMatch &&
+            (process.env.NODE_ENV === 'development' ? (
+              <EscalacaoKonvaExample
+                escalacaoData={escalacaoData}
+                matchData={selectedMatch}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-xl font-display-bold text-gray-800 mb-2">
+                    Gerar Escalação Final
+                  </h3>
+                  <p className="text-gray-600 font-display">
+                    Ajuste os elementos e a ordem das camadas antes de gerar.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="md:col-span-1 space-y-4">
+                    <div>
+                      <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                        Editar Imagem:
+                      </label>
+                      <select
+                        value={activeImageType}
+                        onChange={(e) =>
+                          setActiveImageType(e.target.value as any)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="quadrada">Quadrada</option>
+                        <option value="vertical">Vertical</option>
+                        <option value="horizontal">Horizontal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                        Elemento a ser Movido:
+                      </label>
+                      <select
+                        value={activeElementKey ?? ''}
+                        onChange={(e) =>
+                          setActiveElementKey(e.target.value || null)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="">Nenhum</option>
+                        {renderOrder.map((key) => (
+                          <option
+                            key={key}
+                            value={key}
+                            className="capitalize"
+                          >
+                            {key}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {activeElementKey && (
+                      <PositionController
+                        elementName={activeElementKey}
+                        onMove={(axis, amount) =>
+                          setConfigs((prev) => {
+                            const newConfigs = JSON.parse(JSON.stringify(prev));
+                            const key =
+                              `${activeElementKey}${axis.toUpperCase()}` as keyof EscalacaoConfig;
+                            if (
+                              typeof newConfigs[activeImageType][key] ===
+                              'number'
+                            ) {
+                              newConfigs[activeImageType][key] += amount;
+                            }
+                            return newConfigs;
+                          })
+                        }
+                        onResize={(amount) =>
+                          setConfigs((prev) => {
+                            const newConfigs = JSON.parse(JSON.stringify(prev));
+                            const key =
+                              `${activeElementKey}Size` as keyof EscalacaoConfig;
+                            if (
+                              typeof newConfigs[activeImageType][key] ===
+                              'number'
+                            ) {
+                              newConfigs[activeImageType][key] += amount;
+                            }
+                            return newConfigs;
+                          })
+                        }
+                      />
+                    )}
+                    <div className="mt-4 pt-4 border-t">
+                      <LayerManager
+                        renderOrder={renderOrder}
+                        setRenderOrder={setRenderOrder}
+                      />
+                    </div>
+                  </div>
+                  <div className="relative md:col-span-2 w-full flex justify-center items-center bg-gray-200 rounded-lg p-2">
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        paddingBottom: `${
+                          (configs[activeImageType].canvasHeight /
+                            configs[activeImageType].canvasWidth) *
+                          100
+                        }%`,
+                      }}
+                    >
+                      {[
+                        canvasFundoRef,
+                        canvasInteracaoRef,
+                        canvasFrenteRef,
+                      ].map((ref, index) => (
+                        <canvas
+                          key={index}
+                          ref={ref}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: index + 1,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {selectedMatch && (
+                  <PostTextGenerator
+                    postType={'escalacao'}
+                    match={selectedMatch}
+                    translations={translations}
+                    escalacaoOficial={officialLineUp}
+                  />
+                )}
+                <div className="flex justify-center space-x-4">
+                  <Button
+                    onClick={redrawAllLayers}
+                    disabled={generating}
+                    className="bg-red-600 hover:bg-red-700 text-white cursor-pointer font-display-medium"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader className="w-4 h-4 mr-2 animate-spin" />{' '}
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-4 h-4 mr-2" /> Gerar Imagem
+                      </>
+                    )}
+                  </Button>
+                  {downloadable && (
+                    <Button
+                      onClick={downloadEscalacao}
+                      disabled={generating}
+                      variant="outline"
+                      className="cursor-pointer font-display-medium"
+                    >
+                      <Download className="w-4 h-4 mr-2" /> Download PNG
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
         </div>
 
         <div

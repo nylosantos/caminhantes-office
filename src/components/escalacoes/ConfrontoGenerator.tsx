@@ -710,7 +710,13 @@ const ConfrontoGenerator: React.FC<ConfrontoGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              homeScore={null}
+              homePenScore={null}
+              awayScore={null}
+              awayPenScore={null}
+            />
           </div>
         </div>
       )}

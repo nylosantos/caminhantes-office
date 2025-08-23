@@ -9,7 +9,18 @@ import {
   CanvasExportResult,
   LoadImageResult,
   CANVAS_DIMENSIONS,
-  ELEMENT_Z_INDEX
+  ELEMENT_Z_INDEX,
+  BackgroundElementData,
+  LogoElementData,
+  PlacarElementData,
+  JogadorElementData,
+  TextoJogadorElementData,
+  ListaJogadoresElementData,
+  CanaisTvElementData,
+  GraficoElementData,
+  SubstituicoesElementData,
+  BackgroundUsuarioElementData,
+  InfoPartidaElementData
 } from '@/types/konva';
 import { getGeneratorConfig, getFormatConfig } from '@/config/konva-generators';
 import { BaseImage, IMAGE_SECTIONS } from '@/types/images';
@@ -21,7 +32,18 @@ export function createCanvasElement(
   type: ElementType,
   generatorType: GeneratorType,
   format: ImageFormat,
-  data: any,
+  data:
+    | BackgroundElementData
+    | LogoElementData
+    | PlacarElementData
+    | JogadorElementData
+    | TextoJogadorElementData
+    | ListaJogadoresElementData
+    | CanaisTvElementData
+    | GraficoElementData
+    | SubstituicoesElementData
+    | BackgroundUsuarioElementData
+    | InfoPartidaElementData,
   customPosition?: { x: number; y: number },
   customSize?: { width: number; height: number }
 ): CanvasElement {
@@ -38,7 +60,8 @@ export function createCanvasElement(
   }
 
   return {
-    id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    // id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `${type}-default`,
     type,
     position: customPosition || elementConfig.defaultPosition,
     size: customSize || elementConfig.defaultSize,
@@ -239,7 +262,7 @@ function addEscalacaoElements(
         fontSize: 20,
         fontWeight: 800,
         color: '#ffffff',
-        textAlign: 'center',
+        textAlign: format === 'quadrada' ? 'center' : 'left',
         textShadow: {
           color: 'rgba(0, 0, 0, 0.8)',
           offsetX: 2,
@@ -249,7 +272,7 @@ function addEscalacaoElements(
       },
       layout: 'horizontal',
       showReferee: true
-    }));
+    }, { x: format === 'horizontal' ? 20 : format === 'vertical' ? 229 : 0, y: format === 'vertical' ? 1450 : 970 }));
   }
 }
 
@@ -516,7 +539,7 @@ function addGameArtElements(
           }
         },
         arrow: {
-          fontFamily: 'Arial',
+          fontFamily: 'Funnel Display',
           fontSize: 20,
           fontWeight: 400,
           color: '#ffffff',

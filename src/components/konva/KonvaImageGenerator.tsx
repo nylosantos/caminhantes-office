@@ -498,6 +498,15 @@ const KonvaImageGenerator: React.FC<KonvaImageGeneratorProps> = ({
           onClick={handleStageClick}
           onTap={handleStageClick}
         >
+          {/* Layer de transformação */}
+          <Layer>
+            {/* {selectedElement && ( */}
+            <TransformManager
+              selectedElement={selectedElement}
+              onElementUpdate={onElementUpdate}
+            />
+            {/* )} */}
+          </Layer>
           <Layer>
             {/* Grid de fundo (opcional) */}
             {showGrid && (
@@ -516,16 +525,6 @@ const KonvaImageGenerator: React.FC<KonvaImageGeneratorProps> = ({
               <React.Fragment>
                 {/* Implementar guias aqui se necessário */}
               </React.Fragment>
-            )}
-          </Layer>
-
-          {/* Layer de transformação */}
-          <Layer>
-            {selectedElement && (
-              <TransformManager
-                selectedElement={selectedElement}
-                onElementUpdate={onElementUpdate}
-              />
             )}
           </Layer>
         </Stage>

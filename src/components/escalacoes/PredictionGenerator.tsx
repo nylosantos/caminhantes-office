@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import domtoimage from 'dom-to-image';
 import {
   ArrowLeft,
   ArrowRight,
   Calendar,
+  Download,
   ImageIcon,
-  TrendingUp,
+  Loader,
+  Palette,
+  PieChart,
 } from 'lucide-react';
 
+import Chart from 'chart.js/auto';
+import { Player } from '@/types/squad';
 import { ViewType } from '@/config/navigation';
 import { Button } from '@/components/ui/button';
 import { useImages } from '@/contexts/ImagesContext';
+import { BaseGeneratorData } from '@/types/generator';
 import { Match, MatchFormData } from '@/types/matches';
 import { RoundTranslationsDocument } from '@/types/translations';
 import {
@@ -19,29 +27,53 @@ import {
 } from '@/utils/dateUtils';
 
 import StepperResponsive from '../ui/Stepper';
+import GameArtSelector from './GameArtSelector';
 import PostTextGenerator from './PostTextGenerator';
 import SectionHeader from '../layout/SectionHeader';
-import MatchSelector, { MatchSelectorRef } from './MatchSelector';
+import { EscalacaoData } from './EscalacaoGenerator';
+import LayerManager from '../generator/LayerManager';
+import PositionController from './PositionController';
 import SplitRectangleDisplay from '../SplitRectangleDisplay';
-import BaseImageGenerator, {
-  CanvasElement,
-  ElementConfig,
-} from './BaseImageGenerator';
-import {
-  getBackgroundImageUrl,
-  createDefaultRenderOrder,
-  generateMatchInfoText,
-} from './GeneratorUtils';
+import MatchSelector, { MatchSelectorRef } from './MatchSelector';
 
-interface PredictionGeneratorProps {
+// Props do componente
+interface ConfrontoGeneratorProps {
   onBack: () => void;
   translations: RoundTranslationsDocument[];
   setCurrentView: React.Dispatch<React.SetStateAction<ViewType>>;
   setIsMenuOpen: (open: boolean) => void;
 }
 
+// Interface de configuração dos elementos
+interface ElementConfig {
+  canvasWidth: number;
+  canvasHeight: number;
+  backgroundX: number;
+  backgroundY: number;
+  backgroundSize: number;
+  logoX: number;
+  logoY: number;
+  logoSize: number;
+  placarX: number;
+  placarY: number;
+  placarSize: number;
+  jogadorX: number;
+  jogadorY: number;
+  jogadorSize: number;
+  footerX: number;
+  footerY: number;
+  footerSize: number;
+  pieChartX: number;
+  pieChartY: number;
+  pieChartSize: number;
+  pieChartLegendX: number;
+  pieChartLegendY: number;
+  pieChartLegendSize: number;
+}
+
+// Configurações iniciais
 const initialImageGeneratorConfigs: Record<
-  'quadrada' | 'vertical',
+  'quadrada' | 'vertical' | 'horizontal',
   ElementConfig
 > = {
   quadrada: {
@@ -53,15 +85,21 @@ const initialImageGeneratorConfigs: Record<
     logoX: 921,
     logoY: 31,
     logoSize: 123,
-    placarX: 80,
-    placarY: 300,
-    placarSize: 930,
-    predictionTextX: 540,
-    predictionTextY: 150,
-    predictionTextSize: 1,
-    infoTextX: 540,
-    infoTextY: 950,
-    infoTextSize: 1.2,
+    placarX: 167,
+    placarY: 530,
+    placarSize: 785,
+    jogadorX: 484,
+    jogadorY: 100,
+    jogadorSize: 950,
+    footerX: 198,
+    footerY: 980,
+    footerSize: 1,
+    pieChartX: 215,
+    pieChartY: 325,
+    pieChartSize: 355,
+    pieChartLegendX: 195,
+    pieChartLegendY: 760,
+    pieChartLegendSize: 1.7500000000000007,
   },
   vertical: {
     canvasWidth: 1080,
@@ -72,226 +110,113 @@ const initialImageGeneratorConfigs: Record<
     logoX: 865,
     logoY: 203,
     logoSize: 175,
-    placarX: 115,
-    placarY: 600,
-    placarSize: 875,
-    predictionTextX: 540,
-    predictionTextY: 350,
-    predictionTextSize: 1.2,
-    infoTextX: 540,
-    infoTextY: 1700,
-    infoTextSize: 1.4,
+    placarX: 50,
+    placarY: 82,
+    placarSize: 985,
+    jogadorX: 505,
+    jogadorY: 407,
+    jogadorSize: 950,
+    footerX: 190,
+    footerY: 615,
+    footerSize: 1.4500000000000004,
+    pieChartX: 230,
+    pieChartY: 615,
+    pieChartSize: 415,
+    pieChartLegendX: 195,
+    pieChartLegendY: 1165,
+    pieChartLegendSize: 2.000000000000001,
+  },
+  horizontal: {
+    canvasWidth: 1920,
+    canvasHeight: 1080,
+    backgroundX: 0,
+    backgroundY: 0,
+    backgroundSize: 1920,
+    logoX: 1761,
+    logoY: 31,
+    logoSize: 123,
+    placarX: 850,
+    placarY: -40,
+    placarSize: 450,
+    jogadorX: 175,
+    jogadorY: 100,
+    jogadorSize: 950,
+    footerX: 30,
+    footerY: 1005,
+    footerSize: 1,
+    pieChartX: 960,
+    pieChartY: 600,
+    pieChartSize: 280,
+    pieChartLegendX: 960,
+    pieChartLegendY: 900,
+    pieChartLegendSize: 1,
   },
 };
 
-const PredictionGenerator: React.FC<PredictionGeneratorProps> = ({
+export interface ConfrontoData {
+  homeWins: number;
+  draws: number;
+  awayWins: number;
+}
+
+const ConfrontoGenerator: React.FC<ConfrontoGeneratorProps> = ({
   onBack,
   translations,
   setCurrentView,
   setIsMenuOpen,
 }) => {
   const { baseImages } = useImages();
+  const [configs, setConfigs] = useState(initialImageGeneratorConfigs);
 
-  // Estados básicos
+  const canvasFundoRef = useRef<HTMLCanvasElement>(null);
+  const canvasInteracaoRef = useRef<HTMLCanvasElement>(null);
+  const canvasFrenteRef = useRef<HTMLCanvasElement>(null);
+  const hiddenDisplayRef = useRef<HTMLDivElement>(null); // Ref para o contêiner oculto
+
+  const [renderOrder, setRenderOrder] = useState([
+    'background',
+    'placar',
+    'logo',
+    'info',
+  ]);
+  const [activeElementKey, setActiveElementKey] = useState<string | null>(null);
   const [activeImageType, setActiveImageType] = useState<
-    'quadrada' | 'vertical'
+    'quadrada' | 'vertical' | 'horizontal'
   >('quadrada');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const matchSelectorRef = useRef<MatchSelectorRef>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
-  const [matchData, setMatchData] = useState<MatchFormData | null>(null);
-
-  // Estados específicos do Prediction
-  const [predictionText, setPredictionText] = useState<string>('NOSSO PALPITE');
-  const [homeScorePrediction, setHomeScorePrediction] = useState<number>(1);
-  const [awayScorePrediction, setAwayScorePrediction] = useState<number>(0);
-  const [confidence, setConfidence] = useState<'baixa' | 'média' | 'alta'>(
-    'média'
-  );
-
-  // Estados do novo sistema
-  const [elements, setElements] = useState<CanvasElement[]>([]);
-  const [renderOrder, setRenderOrder] = useState<string[]>([]);
+  const [downloadable, setDownloadable] = useState(false);
+  const [generatorData, setGeneratorData] = useState<BaseGeneratorData>({
+    matchData: null,
+    gameArt: null,
+    featuredPlayer: null,
+    featuredPlayerImageUrl: null,
+    featuredPlayerImgIndex: null,
+  });
 
   const steps = [
     {
       id: 1,
-      title: 'Selecionar Partida',
+      title: 'Dados da Partida',
       icon: Calendar,
-      description: 'Escolha a partida para o palpite',
+      description: 'Selecione a partida',
     },
     {
       id: 2,
-      title: 'Configurar Palpite',
-      icon: TrendingUp,
-      description: 'Defina seu palpite e confiança',
-    },
-    {
-      id: 3,
       title: 'Gerar Imagem',
       icon: ImageIcon,
       description: 'Ajuste e gere a imagem',
     },
   ];
-
   const [step1Valid, setStep1Valid] = useState(false);
+  // const [step2Valid, setStep2Valid] = useState(false);
 
-  // Atualizar elementos quando dados mudarem
-  useEffect(() => {
-    if (selectedMatch) {
-      const config = initialImageGeneratorConfigs[activeImageType];
-
-      // Criar elementos
-      const newElements: CanvasElement[] = [];
-
-      // Background
-      newElements.push({
-        id: 'background',
-        type: 'image',
-        content:
-          getBackgroundImageUrl(baseImages, activeImageType, 'prediction') ||
-          getBackgroundImageUrl(baseImages, activeImageType, 'proximo_jogo'), // Fallback
-        position: {
-          x: 50,
-          y: 50,
-        },
-        size: {
-          width: 100,
-          height: 100,
-        },
-        zIndex: 0,
-        visible: true,
-      });
-
-      // Logo
-      newElements.push({
-        id: 'logo',
-        type: 'image',
-        content: '/caminhantes-clock.png',
-        position: {
-          x: ((config.logoX + config.logoSize / 2) / config.canvasWidth) * 100,
-          y: ((config.logoY + config.logoSize / 2) / config.canvasHeight) * 100,
-        },
-        size: {
-          width: (config.logoSize / config.canvasWidth) * 100,
-          height: (config.logoSize / config.canvasHeight) * 100,
-        },
-        zIndex: 10,
-        visible: true,
-      });
-
-      // Placar/SplitRectangleDisplay com palpite
-      newElements.push({
-        id: 'placar',
-        type: 'component',
-        content: (
-          <SplitRectangleDisplay
-            selectedMatch={selectedMatch}
-            homeScore={homeScorePrediction}
-            homePenScore={null}
-            awayScore={awayScorePrediction}
-            awayPenScore={null}
-          />
-        ),
-        position: {
-          x:
-            ((config.placarX + config.placarSize / 2) / config.canvasWidth) *
-            100,
-          y:
-            ((config.placarY + (config.placarSize * (720 / 1280)) / 2) /
-              config.canvasHeight) *
-            100,
-        },
-        size: {
-          width: (config.placarSize / config.canvasWidth) * 100,
-          height:
-            ((config.placarSize * (720 / 1280)) / config.canvasHeight) * 100,
-        },
-        zIndex: 5,
-        visible: true,
-      });
-
-      // Texto "NOSSO PALPITE"
-      newElements.push({
-        id: 'predictionText',
-        type: 'text',
-        content: predictionText,
-        position: {
-          x: (config.predictionTextX / config.canvasWidth) * 100,
-          y: (config.predictionTextY / config.canvasHeight) * 100,
-        },
-        size: {
-          width: 60,
-          height: 10,
-        },
-        zIndex: 7,
-        visible: true,
-        style: {
-          fontSize: `${(config.predictionTextSize || 1) * 2.5}rem`,
-          color: 'white',
-          textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-          fontFamily: 'Montserrat, sans-serif',
-          fontWeight: '900',
-          textAlign: 'center' as const,
-        },
-      });
-
-      // Informações da partida + confiança
-      const infoText = generateMatchInfoText(matchData);
-      const confidenceText = `Confiança: ${confidence.toUpperCase()}`;
-      const fullInfoText = infoText
-        ? `${infoText} • ${confidenceText}`
-        : confidenceText;
-
-      newElements.push({
-        id: 'infoText',
-        type: 'text',
-        content: fullInfoText,
-        position: {
-          x: (config.infoTextX / config.canvasWidth) * 100,
-          y: (config.infoTextY / config.canvasHeight) * 100,
-        },
-        size: {
-          width: 80,
-          height: 8,
-        },
-        zIndex: 8,
-        visible: true,
-        style: {
-          fontSize: `${(config.infoTextSize || 1) * 1.2}rem`,
-          color: 'white',
-          textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-          fontFamily: 'Montserrat, sans-serif',
-          fontWeight: '700',
-          textAlign: 'center' as const,
-        },
-      });
-
-      setElements(newElements);
-      setRenderOrder(createDefaultRenderOrder(newElements));
-    }
-  }, [
-    selectedMatch,
-    activeImageType,
-    baseImages,
-    predictionText,
-    homeScorePrediction,
-    awayScorePrediction,
-    confidence,
-    matchData,
-  ]);
-
-  const canAdvanceToStepLocal = (step: number): boolean => {
+  const canAdvanceToStep = (step: number): boolean => {
     switch (step) {
       case 2:
-        return !!selectedMatch;
-      case 3:
-        return (
-          !!selectedMatch &&
-          homeScorePrediction !== null &&
-          awayScorePrediction !== null
-        );
+        return step1Valid;
       default:
         return true;
     }
@@ -308,292 +233,592 @@ const PredictionGenerator: React.FC<PredictionGeneratorProps> = ({
     setCurrentStep((prev) => prev + 1);
   };
 
-  const handleMatchSelect = (match: Match) => {
-    const matchDate = new Date(match.fixture.date);
+  const handleMatchSelect = (matchData: Match) => {
+    const matchDate = new Date(matchData.fixture.date);
     const saoPauloDate = convertToSaoPauloTime(matchDate);
     const formData: MatchFormData = {
-      homeTeam: match.teams.home.name,
-      awayTeam: match.teams.away.name,
-      competition: formatCompetitionRound(match, translations),
+      homeTeam: matchData.teams.home.name,
+      awayTeam: matchData.teams.away.name,
+      competition: formatCompetitionRound(matchData, translations),
       matchDate: new Date().toISOString().split('T')[0],
       matchTime: '16:00',
-      venue: match.fixture.venue.name || 'Estádio não informado',
+      venue: matchData.fixture.venue.name || 'Estádio não informado',
       matchday: '',
       stage: '',
-      referee: match.fixture.referee || '',
-      stadium: match.fixture.venue.name || 'Estádio não informado',
+      referee: matchData.fixture.referee || '',
+      stadium: matchData.fixture.venue.name || 'Estádio não informado',
       date: formatDateToBrazilian(saoPauloDate),
-      competitionRound: formatCompetitionRound(match, translations),
+      competitionRound: formatCompetitionRound(matchData, translations),
     };
-    setSelectedMatch(match);
-    setMatchData(formData);
+    setSelectedMatch(matchData);
+    setGeneratorData((prev) => ({ ...prev, matchData: formData }));
   };
 
-  const handleGenerateStart = () => {
+  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Falha ao carregar imagem: ${src}`));
+      img.src = src;
+    });
+  }, []);
+
+  const drawLayer = useCallback(
+    async (
+      canvasRef: React.RefObject<HTMLCanvasElement>,
+      config: ElementConfig,
+      elementsToDraw: string[]
+    ) => {
+      await document.fonts.load('1em Lovers Quarrel');
+      await document.fonts.load('900 1em Montserrat');
+      await document.fonts.ready;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = config.canvasWidth;
+      canvas.height = config.canvasHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Funções auxiliares para gerenciar o estado da sombra
+      const applyShadow = (ctx: CanvasRenderingContext2D) => {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'; // Sombra preta com 80% de opacidade
+        ctx.shadowOffsetX = 2; // Deslocamento horizontal de 2px
+        ctx.shadowOffsetY = 2; // Deslocamento vertical de 2px
+        ctx.shadowBlur = 5; // Nível de desfoque de 5px
+      };
+
+      const clearShadow = (ctx: CanvasRenderingContext2D) => {
+        ctx.shadowColor = 'transparent'; // Cor transparente desativa a sombra
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
+      };
+
+      for (const key of elementsToDraw) {
+        if (key === 'background') {
+          try {
+            const imgUrl = baseImages.find(
+              (img) =>
+                img.type === activeImageType && img.section === 'palpites'
+            )?.url;
+            if (imgUrl) {
+              console.log('Carregando imagem de fundo:', imgUrl);
+              const bgImg = await loadImage(imgUrl);
+              const aspect = bgImg.height / bgImg.width;
+              const width = config.backgroundSize;
+              const height = width * aspect;
+              ctx.drawImage(
+                bgImg,
+                config.backgroundX,
+                config.backgroundY,
+                width,
+                height
+              );
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+        } else if (key === 'logo') {
+          try {
+            const logoImg = await loadImage('/caminhantes-clock.png');
+            ctx.drawImage(
+              logoImg,
+              config.logoX,
+              config.logoY,
+              config.logoSize,
+              config.logoSize
+            );
+          } catch (e) {
+            console.error(e);
+          }
+        } else if (key === 'placar') {
+          if (hiddenDisplayRef.current) {
+            console.log(config.placarX), // Use as posições X e Y do placar ou crie novas para este elemento
+              console.log(config.placarY),
+              console.log(config.placarSize),
+              setGenerating(true); // Indicar que a geração está em andamento
+            try {
+              // Capture o conteúdo do SplitRectangleDisplay como um Blob de imagem PNG
+              const dataUrl = await domtoimage.toPng(hiddenDisplayRef.current, {
+                quality: 1, // 0 to 1, 1 is best quality
+                bgcolor: undefined, // Para manter o fundo transparente, se o container não tiver bg-black
+              });
+
+              // Crie uma nova imagem a partir do Data URL
+              const splitRectImg = new Image();
+              splitRectImg.src = dataUrl;
+
+              // Aguarde o carregamento da imagem
+              await new Promise<void>((resolve, reject) => {
+                splitRectImg.onload = () => resolve();
+                splitRectImg.onerror = (e) => reject(e);
+              });
+
+              // Desenhe a imagem capturada no seu canvas principal
+              ctx.drawImage(
+                splitRectImg,
+                config.placarX, // Use as posições X e Y do placar ou crie novas para este elemento
+                config.placarY,
+                config.placarSize, // Ajuste para a largura do SplitRectangleDisplay (1290px)
+                config.placarSize * (720 / 1280) // Mantenha a proporção (altura: 327px)
+              );
+              setDownloadable(true); // Marcar como baixável após desenhar
+            } catch (e) {
+              console.error(
+                'Erro ao renderizar SplitRectangleDisplay para imagem:',
+                e
+              );
+            } finally {
+              setGenerating(false);
+            }
+          }
+        } else if (key === 'info' && generatorData.matchData) {
+          applyShadow(ctx); // Ativa a sombra para o rodapé
+
+          ctx.fillStyle = '#FFFFFF';
+          const infoFontSize = 20; // Usa o tamanho da fonte da config
+          ctx.font = `800 ${infoFontSize}px "Funnel Display", sans-serif`;
+          ctx.textAlign = 'center'; // Define o alinhamento para o centro para ambas as linhas
+
+          // 1. Desestruturar os dados necessários
+          const { stadium, date, referee, competitionRound } =
+            generatorData.matchData;
+
+          // 2. Construir a string da primeira linha (COMPETICAO - ARBITRO)
+          const line1Parts = [competitionRound.toUpperCase()];
+          if (referee) {
+            line1Parts.push(`ÁRBITRO: ${referee.toUpperCase()}`);
+          }
+          const line1Text = line1Parts.join(' - ');
+
+          // 3. Construir a string da segunda linha (ESTADIO - DATA)
+          const line2Text = `${stadium.toUpperCase()} - ${date.toUpperCase()}`;
+
+          // 4. Calcular as posições para desenhar
+          const centerX = canvas.width / 2; // Coordenada X central é a mesma para ambas as linhas
+
+          // Posição Y da primeira linha, usando a configuração
+          const line1Y = config.footerY;
+
+          // Posição Y da segunda linha, com um espaçamento.
+          // O espaçamento é baseado no tamanho da fonte para ser proporcional.
+          const lineHeight = infoFontSize * 1.4; // 1.4 é um bom multiplicador para espaçamento
+          const line2Y = line1Y + lineHeight;
+
+          const adjustY = 25;
+
+          // 5. Desenhar as duas linhas no canvas
+          ctx.fillText(line1Text, centerX, line1Y + adjustY);
+          ctx.fillText(line2Text, centerX, line2Y + adjustY);
+
+          clearShadow(ctx); // Desliga a sombra após desenhar tudo
+        }
+      }
+    },
+    [generatorData, baseImages, activeImageType, loadImage]
+  );
+
+  const redrawAllLayers = useCallback(() => {
+    if (
+      currentStep !== 2 ||
+      !canvasFundoRef.current ||
+      !canvasInteracaoRef.current ||
+      !canvasFrenteRef.current
+    )
+      return;
+
     setGenerating(true);
+    const config = configs[activeImageType];
+    const activeIndex = activeElementKey
+      ? renderOrder.indexOf(activeElementKey)
+      : -1;
+
+    const behind =
+      activeIndex > -1 ? renderOrder.slice(0, activeIndex) : renderOrder;
+    const active = activeIndex > -1 ? [renderOrder[activeIndex]] : [];
+    const ahead = activeIndex > -1 ? renderOrder.slice(activeIndex + 1) : [];
+
+    Promise.all([
+      // @ts-expect-error
+      drawLayer(canvasFundoRef, config, behind),
+      // @ts-expect-error
+      drawLayer(canvasInteracaoRef, config, active),
+      // @ts-expect-error
+      drawLayer(canvasFrenteRef, config, ahead),
+    ]).finally(() => {
+      setGenerating(false);
+      setDownloadable(true);
+    });
+  }, [
+    currentStep,
+    configs,
+    activeImageType,
+    activeElementKey,
+    renderOrder,
+    drawLayer,
+  ]);
+
+  useEffect(() => {
+    redrawAllLayers();
+  }, [redrawAllLayers]);
+
+  useEffect(() => {
+    if (currentStep !== 4 || !activeElementKey || !canvasInteracaoRef.current)
+      return;
+    const config = configs[activeImageType];
+    // @ts-expect-error
+    drawLayer(canvasInteracaoRef, config, [activeElementKey]);
+  }, [configs, activeElementKey, activeImageType, currentStep, drawLayer]);
+
+  const downloadImage = () => {
+    const finalCanvas = document.createElement('canvas');
+    const config = configs[activeImageType];
+    finalCanvas.width = config.canvasWidth;
+    finalCanvas.height = config.canvasHeight;
+    const ctx = finalCanvas.getContext('2d');
+    if (
+      !ctx ||
+      !canvasFundoRef.current ||
+      !canvasInteracaoRef.current ||
+      !canvasFrenteRef.current
+    )
+      return;
+
+    ctx.drawImage(canvasFundoRef.current, 0, 0);
+    ctx.drawImage(canvasInteracaoRef.current, 0, 0);
+    ctx.drawImage(canvasFrenteRef.current, 0, 0);
+
+    const a = document.createElement('a');
+    a.href = finalCanvas.toDataURL('image/png');
+    a.download = `palpite-${activeImageType}.png`;
+    a.click();
   };
 
-  const handleGenerateEnd = () => {
-    setGenerating(false);
+  const handleMoveElement = (axis: 'x' | 'y', amount: number) => {
+    if (!activeElementKey) return;
+    setConfigs((prev) => {
+      const keyX = `${activeElementKey}X` as keyof ElementConfig;
+      const keyY = `${activeElementKey}Y` as keyof ElementConfig;
+      const newConfig = { ...prev[activeImageType] };
+
+      if (axis === 'x' && keyX in newConfig)
+        (newConfig[keyX] as number) += amount;
+      else if (axis === 'y' && keyY in newConfig)
+        (newConfig[keyY] as number) += amount;
+
+      return { ...prev, [activeImageType]: newConfig };
+    });
   };
 
-  const generatePredictionPostText = (): string => {
-    if (!selectedMatch) return '';
+  // FUNÇÃO CORRIGIDA
+  const handleResizeElement = (amount: number) => {
+    if (!activeElementKey) return;
+    setConfigs((prev) => {
+      const sizeKey = `${activeElementKey}Size` as keyof ElementConfig;
+      const newConfig = { ...prev[activeImageType] };
 
-    const homeTeam = selectedMatch.teams.home.name;
-    const awayTeam = selectedMatch.teams.away.name;
-    const competition = matchData?.competitionRound || 'Partida';
-    const venue = matchData?.stadium || 'Estádio';
-    const date = matchData?.date || '';
+      if (sizeKey in newConfig) {
+        // Elementos de escala (texto, legenda) são mais sensíveis
+        if (sizeKey === 'footerSize' || sizeKey === 'pieChartLegendSize') {
+          (newConfig[sizeKey] as number) += amount / 100; // Incremento pequeno
+        } else {
+          // Elementos de imagem (logo, placar, etc.) recebem o incremento direto
+          (newConfig[sizeKey] as number) += amount; // Incremento maior
+        }
+      }
 
-    const confidenceEmoji = {
-      baixa: '🤔',
-      média: '🎯',
-      alta: '🔥',
-    }[confidence];
+      return { ...prev, [activeImageType]: newConfig };
+    });
+  };
 
-    const confidenceText = {
-      baixa: 'Palpite arriscado',
-      média: 'Palpite equilibrado',
-      alta: 'Palpite confiante',
-    }[confidence];
-
-    return `⚽ NOSSO PALPITE ${confidenceEmoji}
-
-${homeTeam} ${homeScorePrediction} x ${awayScorePrediction} ${awayTeam}
-
-📅 ${date}
-🏟️ ${venue}
-🏆 ${competition}
-
-${confidenceText}! E vocês, qual o palpite de vocês? 
-
-Comentem aí embaixo! 👇
-
-#Palpite #${homeTeam.replace(/\s+/g, '')}vs${awayTeam.replace(
-      /\s+/g,
-      ''
-    )} #Caminhantes #Futebol`;
+  const handleStepClick = (stepId: number) => {
+    if (canAdvanceToStep(stepId)) {
+      setCurrentStep(stepId);
+    }
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
       <SectionHeader
-        title="Gerador de Palpite"
         onBack={onBack}
         setCurrentView={setCurrentView}
         setIsMenuOpen={setIsMenuOpen}
+        title="Confronto Direto"
       />
 
-      <StepperResponsive
-        steps={steps}
-        currentStep={currentStep}
-        onStepClick={setCurrentStep}
-        canAdvanceToStep={canAdvanceToStepLocal}
-      />
-
-      {currentStep === 1 && (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Selecione a Partida</h3>
-            <MatchSelector
-              ref={matchSelectorRef}
-              onMatchSelect={handleMatchSelect}
-              onValidationChange={setStep1Valid}
-              translations={translations}
+      {/* Onde você renderiza o componente para ser capturado */}
+      {selectedMatch && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <div
+            ref={hiddenDisplayRef}
+            style={{ width: '1290px', height: '327px' }}
+          >
+            <SplitRectangleDisplay
               selectedMatch={selectedMatch}
+              homeScore={null}
+              homePenScore={null}
+              awayScore={null}
+              awayPenScore={null}
             />
           </div>
-
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={onBack}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button
-              onClick={handleNextStep}
-              disabled={!canAdvanceToStepLocal(2)}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
-              Próximo
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
         </div>
       )}
 
-      {currentStep === 2 && selectedMatch && (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Configure seu Palpite</h3>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <StepperResponsive
+          steps={steps}
+          currentStep={currentStep}
+          onStepClick={handleStepClick}
+          canAdvanceToStep={canAdvanceToStep}
+        />
 
-            {/* Personalização do texto principal */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Texto Principal</label>
-              <input
-                type="text"
-                value={predictionText}
-                onChange={(e) => setPredictionText(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="NOSSO PALPITE"
-                maxLength={25}
-              />
-              <p className="text-xs text-gray-500">
-                Máximo 25 caracteres. Use maiúsculas para melhor visual.
-              </p>
-            </div>
-
-            {/* Palpite do placar */}
-            <div className="space-y-4">
-              <h4 className="font-medium">Placar Previsto</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {selectedMatch.teams.home.name}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    value={homeScorePrediction}
-                    onChange={(e) =>
-                      setHomeScorePrediction(parseInt(e.target.value) || 0)
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {selectedMatch.teams.away.name}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    value={awayScorePrediction}
-                    onChange={(e) =>
-                      setAwayScorePrediction(parseInt(e.target.value) || 0)
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Nível de confiança */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nível de Confiança</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['baixa', 'média', 'alta'] as const).map((level) => (
-                  <Button
-                    key={level}
-                    variant={confidence === level ? 'default' : 'outline'}
-                    onClick={() => setConfidence(level)}
-                    className={
-                      confidence === level
-                        ? 'bg-teal-600 hover:bg-teal-700'
-                        : ''
-                    }
-                  >
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500">
-                Baixa: palpite arriscado | Média: equilibrado | Alta: confiante
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(1)}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button
-              onClick={handleNextStep}
-              disabled={!canAdvanceToStepLocal(3)}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
-              Próximo
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {currentStep === 3 && (
-        <div className="space-y-6">
-          {/* Seletor de tipo de imagem */}
-          <div className="flex justify-center space-x-4">
-            {(['quadrada', 'vertical'] as const).map((type) => (
-              <Button
-                key={type}
-                variant={activeImageType === type ? 'default' : 'outline'}
-                onClick={() => setActiveImageType(type)}
-                className={
-                  activeImageType === type
-                    ? 'bg-teal-600 hover:bg-teal-700'
-                    : ''
-                }
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </Button>
-            ))}
-          </div>
-
-          {/* Gerador de imagem */}
-          <BaseImageGenerator
-            configs={initialImageGeneratorConfigs}
-            activeImageType={activeImageType}
-            elements={elements}
-            onElementsChange={setElements}
-            renderOrder={renderOrder}
-            onRenderOrderChange={setRenderOrder}
-            generating={generating}
-            onGenerateStart={handleGenerateStart}
-            onGenerateEnd={handleGenerateEnd}
-            downloadFileName="prediction"
-          />
-
-          {/* Gerador de texto para post */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Texto para Post</h3>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <pre className="whitespace-pre-wrap text-sm">
-                {generatePredictionPostText()}
-              </pre>
-            </div>
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(generatePredictionPostText());
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {currentStep === 1 && (
+            <MatchSelector
+              ref={matchSelectorRef}
+              onMatchSelected={handleMatchSelect}
+              escalacaoData={{
+                ...generatorData,
+                formation: null,
+                selectedPlayers: {},
+                reservePlayers: [],
+                coach: '',
               }}
-              variant="outline"
-              className="w-full"
-            >
-              Copiar Texto
-            </Button>
-          </div>
-
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(2)}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-          </div>
+              onValidationChange={setStep1Valid}
+              translations={translations}
+            />
+          )}
+          {/* {currentStep === 2 && (
+            <GameArtSelector
+              onArtSelect={handleGameArtSelect}
+              escalacaoData={{
+                ...generatorData,
+                formation: null,
+                selectedPlayers: {},
+                reservePlayers: [],
+                coach: '',
+              }}
+              setEscalacaoData={(update) => {
+                let newState;
+                if (typeof update === 'function') {
+                  const prevAsEscalacaoData: EscalacaoData = {
+                    ...generatorData,
+                    formation: null,
+                    selectedPlayers: {},
+                    reservePlayers: [],
+                    coach: '',
+                  };
+                  newState = update(prevAsEscalacaoData);
+                } else {
+                  newState = update;
+                }
+                setGeneratorData((prev) => ({
+                  ...prev,
+                  gameArt: newState.gameArt,
+                  featuredPlayer: newState.featuredPlayer,
+                  featuredPlayerImageUrl: newState.featuredPlayerImageUrl,
+                }));
+                setStep2Valid(!!newState.gameArt && !!newState.featuredPlayer);
+              }}
+            />
+          )}
+          {currentStep === 3 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-display-medium text-center">
+                Histórico do Confronto
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Vitórias {selectedMatch?.teams.home.name}
+                  </label>
+                  <input
+                    type="text"
+                    value={confrontoData.homeWins || ''}
+                    onChange={(e) => handleConfrontoChange(e, 'homeWins')}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Empates
+                  </label>
+                  <input
+                    type="text"
+                    value={confrontoData.draws || ''}
+                    onChange={(e) => handleConfrontoChange(e, 'draws')}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Vitórias {selectedMatch?.teams.away.name}
+                  </label>
+                  <input
+                    type="text"
+                    value={confrontoData.awayWins || ''}
+                    onChange={(e) => handleConfrontoChange(e, 'awayWins')}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )} */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-1 space-y-4">
+                  <div>
+                    <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                      Editar Imagem:
+                    </label>
+                    <select
+                      value={activeImageType}
+                      onChange={(e) =>
+                        setActiveImageType(e.target.value as any)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="quadrada">Quadrada</option>
+                      <option value="vertical">Vertical</option>
+                      {/* <option value="horizontal">Horizontal</option> */}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-display-medium text-gray-700 mb-2">
+                      Elemento a ser Movido:
+                    </label>
+                    <select
+                      value={activeElementKey ?? ''}
+                      onChange={(e) =>
+                        setActiveElementKey(e.target.value || null)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="">Nenhum</option>
+                      {renderOrder.map((key) => (
+                        <option
+                          key={key}
+                          value={key}
+                          className="capitalize"
+                        >
+                          {key.replace(/([A-Z])/g, ' $1')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {activeElementKey && (
+                    <PositionController
+                      elementName={activeElementKey}
+                      onMove={handleMoveElement}
+                      onResize={handleResizeElement}
+                    />
+                  )}
+                  <div className="mt-4 pt-4 border-t">
+                    <LayerManager
+                      renderOrder={renderOrder}
+                      setRenderOrder={setRenderOrder}
+                    />
+                  </div>
+                </div>
+                <div className="relative md:col-span-2 w-full flex justify-center items-center bg-gray-200 rounded-lg p-2">
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      paddingBottom: `${
+                        (configs[activeImageType].canvasHeight /
+                          configs[activeImageType].canvasWidth) *
+                        100
+                      }%`,
+                    }}
+                  >
+                    {[canvasFundoRef, canvasInteracaoRef, canvasFrenteRef].map(
+                      (ref, index) => (
+                        <canvas
+                          key={index}
+                          ref={ref}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: index + 1,
+                          }}
+                        />
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+              {selectedMatch && (
+                <PostTextGenerator
+                  postType={'palpites'}
+                  match={selectedMatch}
+                  translations={translations}
+                />
+              )}
+              <div className="flex justify-center space-x-4">
+                <Button
+                  onClick={redrawAllLayers}
+                  disabled={generating}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {generating ? (
+                    <>
+                      <Loader className="w-4 h-4 mr-2 animate-spin" />{' '}
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4 mr-2" /> Gerar Imagem
+                    </>
+                  )}
+                </Button>
+                {downloadable && (
+                  <Button
+                    onClick={downloadImage}
+                    disabled={generating}
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4 mr-2" /> Download
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        <div
+          className={`flex ${
+            currentStep === 1 ? 'justify-end' : 'justify-between'
+          } mt-6`}
+        >
+          {currentStep > 1 && (
+            <Button
+              onClick={() => setCurrentStep((prev) => prev - 1)}
+              variant="outline"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Anterior
+            </Button>
+          )}
+          {currentStep < 4 && (
+            <Button
+              onClick={handleNextStep}
+              disabled={!canAdvanceToStep(currentStep + 1)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Próximo <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default PredictionGenerator;
+export default ConfrontoGenerator;

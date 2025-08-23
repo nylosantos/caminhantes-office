@@ -4,7 +4,11 @@ import React, { useCallback, useMemo } from 'react';
 import { Text, Group } from 'react-konva';
 import Konva from 'konva';
 
-import { CanvasElement, InfoPartidaElementData, FormatConfig } from '@/types/konva';
+import {
+  CanvasElement,
+  InfoPartidaElementData,
+  FormatConfig,
+} from '@/types/konva';
 import { BaseImage } from '@/types/images';
 
 interface InfoPartidaElementProps {
@@ -24,7 +28,7 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
   onDragEnd,
   onTransform,
   baseImages,
-  formatConfig
+  formatConfig,
 }) => {
   const data = element.data as InfoPartidaElementData;
 
@@ -43,35 +47,35 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
     if (data.layout === 'vertical') {
       // Layout vertical - uma informação por linha
       let currentY = 0;
-      
+
       if (competitionRound) {
         lines.push({
           text: competitionRound.toUpperCase(),
-          y: currentY
+          y: currentY,
         });
         currentY += lineHeight;
       }
-      
+
       if (data.showReferee && referee) {
         lines.push({
           text: `ÁRBITRO: ${referee.toUpperCase()}`,
-          y: currentY
+          y: currentY,
         });
         currentY += lineHeight;
       }
-      
+
       if (stadium) {
         lines.push({
           text: stadium.toUpperCase(),
-          y: currentY
+          y: currentY,
         });
         currentY += lineHeight;
       }
-      
+
       if (date) {
         lines.push({
           text: date.toUpperCase(),
-          y: currentY
+          y: currentY,
         });
       }
     } else {
@@ -81,20 +85,22 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
         line1Parts.push(`ÁRBITRO: ${referee.toUpperCase()}`);
       }
       const line1Text = line1Parts.filter(Boolean).join(' - ');
-      
-      const line2Text = `${stadium?.toUpperCase() || ''} - ${date?.toUpperCase() || ''}`;
-      
+
+      const line2Text = `${stadium?.toUpperCase() || ''} - ${
+        date?.toUpperCase() || ''
+      }`;
+
       if (line1Text) {
         lines.push({
           text: line1Text,
-          y: 0
+          y: 0,
         });
       }
-      
+
       if (line2Text.trim() !== ' - ') {
         lines.push({
           text: line2Text,
-          y: lineHeight
+          y: lineHeight,
         });
       }
     }
@@ -102,41 +108,47 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
     return lines;
   }, [data]);
 
-  const handleDragEnd = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    onDragEnd({
-      x: node.x(),
-      y: node.y()
-    });
-  }, [onDragEnd]);
+  const handleDragEnd = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      onDragEnd({
+        x: node.x(),
+        y: node.y(),
+      });
+    },
+    [onDragEnd]
+  );
 
-  const handleTransformEnd = useCallback((e: Konva.KonvaEventObject<Event>) => {
-    const node = e.target as Konva.Group;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    
-    // Reset scale
-    node.scaleX(1);
-    node.scaleY(1);
-    
-    // Atualizar tamanho da fonte baseado na escala
-    const scale = Math.max(0.5, Math.min(2, Math.min(scaleX, scaleY)));
-    
-    onTransform({
-      position: { x: node.x(), y: node.y() },
-      size: {
-        width: element.size.width * scaleX,
-        height: element.size.height * scaleY
-      },
-      data: {
-        ...data,
-        style: {
-          ...data.style,
-          fontSize: data.style.fontSize * scale
-        }
-      }
-    });
-  }, [onTransform, data, element.size]);
+  const handleTransformEnd = useCallback(
+    (e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target as Konva.Group;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+
+      // Reset scale
+      node.scaleX(1);
+      node.scaleY(1);
+
+      // Atualizar tamanho da fonte baseado na escala
+      const scale = Math.max(0.5, Math.min(2, Math.min(scaleX, scaleY)));
+
+      onTransform({
+        position: { x: node.x(), y: node.y() },
+        size: {
+          width: element.size.width * scaleX,
+          height: element.size.height * scaleY,
+        },
+        data: {
+          ...data,
+          style: {
+            ...data.style,
+            fontSize: data.style.fontSize * scale,
+          },
+        },
+      });
+    },
+    [onTransform, data, element.size]
+  );
 
   if (infoLines.length === 0) {
     return (
@@ -155,9 +167,9 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
           y={element.size.height / 2}
           text="Sem informações da partida"
           fontSize={16}
-          fontFamily="Arial"
+          fontFamily="Funnel Display"
           fill="#6b7280"
-          align="center"
+          align={'center'}
           verticalAlign="middle"
           width={element.size.width}
           offsetY={8}
@@ -166,7 +178,11 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
       </Group>
     );
   }
-
+  console.log(
+    'Renderizando InfoPartidaElement:',
+    data.style.textAlign,
+    data.layout
+  );
   return (
     <Group
       x={element.position.x}
@@ -190,7 +206,8 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
           fontFamily={data.style.fontFamily}
           fontStyle={data.style.fontWeight >= 600 ? 'bold' : 'normal'}
           fill={data.style.color}
-          align={data.style.textAlign as any}
+          align={data.style.textAlign}
+          // align={data.style.textAlign}
           width={element.size.width}
           shadowColor={data.style.textShadow?.color || 'rgba(0, 0, 0, 0.8)'}
           shadowOffsetX={data.style.textShadow?.offsetX || 2}
@@ -199,7 +216,7 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
           listening={false}
         />
       ))}
-      
+
       {/* Borda de seleção */}
       {isSelected && (
         <Text
@@ -219,4 +236,3 @@ const InfoPartidaElement: React.FC<InfoPartidaElementProps> = ({
 };
 
 export default InfoPartidaElement;
-

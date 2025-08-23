@@ -329,20 +329,21 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
           >
             {homeScore}-{awayScore}
           </p>
-          {selectedMatch.fixture.status.short === 'PEN' &&
+          {((selectedMatch.fixture.status.short === 'PEN' &&
             homePenScore != null &&
-            awayPenScore != null && (
-              <p
-                className="absolute w-full text-[40px] font-placar-black text-white leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2 mt-32"
-                style={{
-                  top: '65.7%',
-                  zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
-                  textShadow: '2px 2px 4px #000000',
-                }}
-              >
-                ({homePenScore}-{awayPenScore} pen.)
-              </p>
-            )}
+            awayPenScore != null) ||
+            (homePenScore != null && awayPenScore != null)) && (
+            <p
+              className="absolute w-full text-[40px] font-placar-black text-white leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2 mt-32"
+              style={{
+                top: '65.7%',
+                zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
+                textShadow: '2px 2px 4px #000000',
+              }}
+            >
+              ({homePenScore}-{awayPenScore} pen.)
+            </p>
+          )}
         </>
       )}
     </div>

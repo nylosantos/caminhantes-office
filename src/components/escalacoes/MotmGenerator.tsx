@@ -560,7 +560,13 @@ const MotmGenerator: React.FC<MotmGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              awayPenScore={selectedMatch.score?.penalty?.away ?? null}
+              awayScore={selectedMatch.goals.away}
+              homePenScore={selectedMatch.score?.penalty?.home ?? null}
+              homeScore={selectedMatch.goals.home}
+            />
           </div>
         </div>
       )}

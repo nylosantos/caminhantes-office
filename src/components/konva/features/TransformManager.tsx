@@ -8,7 +8,7 @@ import { TransformManagerProps } from '@/types/konva';
 
 const TransformManager: React.FC<TransformManagerProps> = ({
   selectedElement,
-  onElementUpdate
+  onElementUpdate,
 }) => {
   const transformerRef = useRef<Konva.Transformer>(null);
 
@@ -16,14 +16,15 @@ const TransformManager: React.FC<TransformManagerProps> = ({
   useEffect(() => {
     const transformer = transformerRef.current;
     if (!transformer) return;
-
     if (selectedElement && !selectedElement.locked) {
       // Encontrar o nó do elemento selecionado
       const stage = transformer.getStage();
       if (!stage) return;
 
+      console.log('stage ', stage);
       const elementNode = stage.findOne(`#${selectedElement.id}`);
       if (elementNode) {
+        console.log('elementNode ', elementNode);
         transformer.nodes([elementNode]);
         transformer.getLayer()?.batchDraw();
       }
@@ -38,14 +39,14 @@ const TransformManager: React.FC<TransformManagerProps> = ({
     if (!selectedElement) return {};
 
     const config: any = {
-      rotateEnabled: false, // Desabilitar rotação por padrão
-      borderStroke: '#3b82f6',
-      borderStrokeWidth: 2,
-      anchorStroke: '#3b82f6',
-      anchorStrokeWidth: 2,
+      rotateEnabled: true, // Desabilitar rotação por padrão
+      borderStroke: '#3bd1f6',
+      borderStrokeWidth: 20,
+      anchorStroke: '#d4f63b',
+      anchorStrokeWidth: 20,
       anchorFill: '#ffffff',
-      anchorSize: 8,
-      keepRatio: false
+      anchorSize: 16,
+      keepRatio: true,
     };
 
     // Configurações específicas por tipo de elemento
@@ -60,19 +61,34 @@ const TransformManager: React.FC<TransformManagerProps> = ({
       case 'logo':
         // Logo deve manter proporção
         config.keepRatio = true;
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
 
       case 'jogador':
         // Jogador deve manter proporção
         config.keepRatio = true;
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
 
       case 'placar':
         // Placar deve manter proporção específica (1280x720)
         config.keepRatio = true;
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
 
       case 'texto-jogador':
@@ -80,18 +96,34 @@ const TransformManager: React.FC<TransformManagerProps> = ({
       case 'canais-tv':
       case 'substituicoes':
       case 'info-partida':
-        // Elementos de texto podem ser redimensionados livremente
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.keepRatio = true;
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
 
       case 'grafico':
         // Gráfico deve manter proporção quadrada
         config.keepRatio = true;
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
 
       default:
-        config.enabledAnchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        config.keepRatio = true;
+        config.enabledAnchors = [
+          'top-left',
+          'top-right',
+          'bottom-left',
+          'bottom-right',
+        ];
         break;
     }
 
@@ -111,69 +143,83 @@ const TransformManager: React.FC<TransformManagerProps> = ({
   }, [selectedElement]);
 
   // Manipular fim da transformação
-  const handleTransformEnd = useCallback((e: Konva.KonvaEventObject<Event>) => {
-    if (!selectedElement) return;
+  const handleTransformEnd = useCallback(
+    (e: Konva.KonvaEventObject<Event>) => {
+      if (!selectedElement) return;
 
-    const node = e.target;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
+      const node = e.target;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
 
-    // Reset scale
-    node.scaleX(1);
-    node.scaleY(1);
+      // Reset scale
+      node.scaleX(1);
+      node.scaleY(1);
 
-    // Calcular novas dimensões
-    let newWidth = Math.max(5, node.width() * scaleX);
-    let newHeight = Math.max(5, node.height() * scaleY);
+      // Calcular novas dimensões
+      let newWidth = Math.max(5, node.width() * scaleX);
+      let newHeight = Math.max(5, node.height() * scaleY);
 
-    // Aplicar constraints de tamanho
-    const constraints = selectedElement.data?.constraints;
-    if (constraints) {
-      if (constraints.minSize) {
-        newWidth = Math.max(newWidth, constraints.minSize.width);
-        newHeight = Math.max(newHeight, constraints.minSize.height);
+      // Aplicar constraints de tamanho
+      const constraints = selectedElement.data?.constraints;
+      if (constraints) {
+        if (constraints.minSize) {
+          newWidth = Math.max(newWidth, constraints.minSize.width);
+          newHeight = Math.max(newHeight, constraints.minSize.height);
+        }
+        if (constraints.maxSize) {
+          newWidth = Math.min(newWidth, constraints.maxSize.width);
+          newHeight = Math.min(newHeight, constraints.maxSize.height);
+        }
       }
-      if (constraints.maxSize) {
-        newWidth = Math.min(newWidth, constraints.maxSize.width);
-        newHeight = Math.min(newHeight, constraints.maxSize.height);
-      }
-    }
 
-    // Atualizar elemento
-    onElementUpdate(selectedElement.id, {
-      position: {
-        x: node.x(),
-        y: node.y()
-      },
-      size: {
-        width: newWidth,
-        height: newHeight
-      }
-    });
-  }, [selectedElement, onElementUpdate]);
+      // Atualizar elemento
+      onElementUpdate(selectedElement.id, {
+        position: {
+          x: node.x(),
+          y: node.y(),
+        },
+        size: {
+          width: newWidth,
+          height: newHeight,
+        },
+      });
+    },
+    [selectedElement, onElementUpdate]
+  );
 
   // Manipular movimento (drag)
-  const handleDragEnd = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
-    if (!selectedElement) return;
+  const handleDragEnd = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      if (!selectedElement) return;
 
-    const node = e.target;
-    
-    onElementUpdate(selectedElement.id, {
-      position: {
-        x: node.x(),
-        y: node.y()
-      }
-    });
-  }, [selectedElement, onElementUpdate]);
+      const node = e.target;
+
+      onElementUpdate(selectedElement.id, {
+        position: {
+          x: node.x(),
+          y: node.y(),
+        },
+      });
+    },
+    [selectedElement, onElementUpdate]
+  );
 
   if (!selectedElement || selectedElement.locked) {
     return null;
   }
-
+  console.log('Renderizando TransformManager para:', selectedElement.id);
   return (
     <Transformer
       ref={transformerRef}
-      {...getTransformerConfig()}
+      // {...getTransformerConfig()}
+      rotateEnabled={true} // Desabilitar rotação por padrão
+      borderStroke="#3bd1f6"
+      borderStrokeWidth={20}
+      anchorStroke="#d4f63b"
+      anchorStrokeWidth={20}
+      anchorFill="#ffffff"
+      anchorSize={16}
+      keepRatio={true}
       onTransformEnd={handleTransformEnd}
       onDragEnd={handleDragEnd}
     />
@@ -181,4 +227,3 @@ const TransformManager: React.FC<TransformManagerProps> = ({
 };
 
 export default TransformManager;
-

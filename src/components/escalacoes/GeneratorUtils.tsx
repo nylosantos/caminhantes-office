@@ -128,14 +128,13 @@ export const convertCanvasConfigToElements = (
   }
 
   // Jogador
-  if (config.jogadorX !== undefined && generatorData?.featuredPlayerImageUrl) {
+  if (config.jogadorX !== undefined && generatorData?.goal?.scorerImageUrl) {
     const jogadorAspect = 1062 / 666; // Proporção padrão das imagens de jogador
     const jogadorHeight = config.jogadorSize * jogadorAspect;
-
     elements.push({
       id: 'jogador',
       type: 'image',
-      content: generatorData.featuredPlayerImageUrl,
+      content: generatorData?.goal?.scorerImageUrl,
       position: {
         x: pxToPercent(config.jogadorX + config.jogadorSize / 2, 'width'),
         y: pxToPercent(config.jogadorY + jogadorHeight / 2, 'height'),
@@ -148,32 +147,50 @@ export const convertCanvasConfigToElements = (
       visible: true,
     });
   }
+  console.log(
+    'ATENCAO ATENCAO> ',
+    config.substitutionsX !== undefined,
+    generatorData.substitutions && generatorData.substitutions.length > 0
+  );
+  if (
+    config.substitutionsX !== undefined &&
+    generatorData.substitutions &&
+    generatorData.substitutions.length > 0
+  ) {
+    elements.push({
+      id: 'substituicoes',
+      type: 'text',
+      content: generatorData?.goal?.scorer?.name as string[], // Conteúdo em array
+      position: {
+        x: pxToPercent(config.motmTextX, 'width'),
+        y: pxToPercent(config.motmTextY, 'height'),
+      },
+      size: {
+        width: pxToPercent(config.canvasWidth, 'width'), // Tamanho relativo em %
+        height: pxToPercent(config.canvasHeight, 'height'),
+      },
+      zIndex: 8,
+      visible: true,
+    });
+  }
+  if (config.motmTextX !== undefined && generatorData?.goal?.scorer?.name) {
+    elements.push({
+      id: 'nome',
+      type: 'text',
+      content: generatorData?.goal?.scorer?.name as string[], // Conteúdo em array
+      position: {
+        x: pxToPercent(config.motmTextX, 'width'),
+        y: pxToPercent(config.motmTextY, 'height'),
+      },
+      size: {
+        width: pxToPercent(config.canvasWidth, 'width'), // Tamanho relativo em %
+        height: pxToPercent(config.canvasHeight, 'height'),
+      },
+      zIndex: 8,
+      visible: true,
+    });
+  }
 
-  // Footer/Info (texto informativo)
-  //   if (config.footerX !== undefined) {
-  //     elements.push({
-  //       id: 'info',
-  //       type: 'text',
-  //       content: '', // Será preenchido pelo generator específico
-  //       position: {
-  //         x: pxToPercent(config.footerX, 'width'),
-  //         y: pxToPercent(config.footerY, 'height'),
-  //       },
-  //       size: {
-  //         width: 30, // Tamanho relativo em %
-  //         height: 10,
-  //       },
-  //       zIndex: 8,
-  //       visible: true,
-  //       style: {
-  //         fontSize: `${config.footerSize || 1}rem`,
-  //         color: 'white',
-  //         textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-  //         fontFamily: 'Montserrat, sans-serif',
-  //         fontWeight: '900',
-  //       },
-  //     });
-  //   }
   if (infoData) {
     elements.push({
       id: 'info',
@@ -242,12 +259,16 @@ export const convertCanvasConfigToElements = (
   // Player Number (específico do MotmGenerator)
   if (
     config.playerNumberX !== undefined &&
-    generatorData?.featuredPlayer?.number
+    (generatorData?.featuredPlayer?.number ||
+      generatorData?.goal?.scorer?.number)
   ) {
+    const playerNumber =
+      generatorData?.featuredPlayer?.number ||
+      generatorData?.goal?.scorer?.number;
     elements.push({
-      id: 'playerNumber',
+      id: 'numero',
       type: 'text',
-      content: generatorData.featuredPlayer.number.toString(),
+      content: playerNumber.toString(),
       position: {
         x: pxToPercent(config.playerNumberX, 'width'),
         y: pxToPercent(config.playerNumberY, 'height'),
@@ -342,12 +363,14 @@ export const createDefaultRenderOrder = (
   const order = [
     'background',
     'acabamento',
-    'jogador',
-    'placar',
     'info',
+    'nome',
+    'numero',
+    'jogador',
+    'substituicoes',
+    'placar',
     'tv',
     'motmText',
-    'playerNumber',
     'logo',
   ];
 

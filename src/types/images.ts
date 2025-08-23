@@ -269,7 +269,8 @@ export enum IMAGE_SECTIONS {
   INICIO_PRORROGACAO = 'inicio_prorrogacao',
   INICIO_SEGUNDO_TEMPO_PRORROGACAO = 'inicio_segundo_tempo_prorrogacao',
   GOL = 'gol',
-  SUBSTITUICAO = 'substituicao'
+  SUBSTITUICAO = 'substituicao',
+  PALPITES = 'palpites' // 1. NOVA SEÇÃO ADICIONADA AQUI
 }
 
 // Enum para os tipos de imagem
@@ -391,6 +392,12 @@ export const SECTIONS_CONFIG: Record<IMAGE_SECTIONS, SectionConfig> = {
     key: IMAGE_SECTIONS.SUBSTITUICAO,
     label: 'Substituição',
     description: 'Imagens para posts de substituições',
+    allowedTypes: [IMAGE_TYPES_ENUM.QUADRADA, IMAGE_TYPES_ENUM.VERTICAL]
+  },
+  [IMAGE_SECTIONS.PALPITES]: {
+    key: IMAGE_SECTIONS.PALPITES,
+    label: 'Palpites',
+    description: 'Imagens para posts de palpites',
     allowedTypes: [IMAGE_TYPES_ENUM.QUADRADA, IMAGE_TYPES_ENUM.VERTICAL]
   }
 };

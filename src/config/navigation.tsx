@@ -237,6 +237,7 @@ import {
   ShieldCheck,
   Swords,
   Home,
+  Goal,
 } from 'lucide-react';
 import { UserData } from '@/types/user';
 
@@ -249,8 +250,8 @@ export type ViewType =
   | 'motm'
   | 'fullTime'
   | 'confronto'
-  | 'gameArt' // Nova view para o GameArtGenerator
-  | 'new'; // Nova view para o GameArtGenerator
+  | 'gameArt'
+  | 'palpites';
 
 export interface NavItem {
   id: ViewType;
@@ -269,23 +270,6 @@ export interface NavItem {
 }
 
 export const navigationItems: NavItem[] = [
-  // Nova entrada para o GameArtGenerator
-  {
-    id: 'new',
-    title: 'Artes do Jogo Teste',
-    description:
-      'Crie artes para todos os momentos da partida: início, gols, substituições e mais',
-    icon: <Brush className="w-8 h-8 text-cyan-600" />,
-    lucideIcon: Brush,
-    roles: ['user', 'root', 'editor'],
-    isCard: true,
-    colorClasses: {
-      border: 'border-cyan-200',
-      iconBg: 'bg-cyan-100',
-      iconColor: 'text-cyan-600',
-      button: 'bg-cyan-600 hover:bg-cyan-700',
-    },
-  },
   {
     id: 'gameArt',
     title: 'Artes do Jogo',
@@ -393,6 +377,22 @@ export const navigationItems: NavItem[] = [
       iconBg: 'bg-pink-100',
       iconColor: 'text-pink-600',
       button: 'bg-pink-600 hover:bg-pink-700',
+    },
+  },
+  {
+    id: 'palpites',
+    title: 'Palpites',
+    description:
+      'Crie artes para todos os momentos da partida: início, gols, substituições e mais',
+    icon: <Goal className="w-8 h-8 text-orange-600" />,
+    lucideIcon: Goal,
+    roles: ['user', 'root', 'editor'],
+    isCard: true,
+    colorClasses: {
+      border: 'border-orange-200',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      button: 'bg-orange-600 hover:bg-orange-700',
     },
   },
   {

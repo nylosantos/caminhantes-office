@@ -1,13 +1,13 @@
 // src/config/konva-generators.ts
 
-import { 
-  GeneratorConfig, 
-  FormatConfig, 
-  ImageFormat, 
+import {
+  GeneratorConfig,
+  FormatConfig,
+  ImageFormat,
   ElementType,
   TextStyle,
   DEFAULT_COLORS,
-  CANVAS_DIMENSIONS 
+  CANVAS_DIMENSIONS
 } from '@/types/konva';
 import { IMAGE_SECTIONS } from '@/types/images';
 
@@ -143,7 +143,7 @@ const ESCALACAO_CONFIG: GeneratorConfig = {
   optionalElements: ['jogador', 'lista-jogadores', 'info-partida'],
   defaultRenderOrder: [
     'background',
-    'placar', 
+    'placar',
     'logo',
     'jogador',
     'lista-jogadores',
@@ -166,12 +166,12 @@ const ESCALACAO_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 82, y: -75 },
-          defaultSize: { width: 450, height: 450 * (720/1280) },
+          defaultSize: { width: 450, height: 450 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: 484, y: 100 },
-          defaultSize: { width: 950, height: 950 * (1062/666) },
+          defaultSize: { width: 950, height: 950 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'lista-jogadores': {
@@ -181,7 +181,7 @@ const ESCALACAO_CONFIG: GeneratorConfig = {
         },
         'info-partida': {
           defaultPosition: { x: 198, y: 970 },
-          defaultSize: { width: 800, height: 80 },
+          defaultSize: { width: 1080, height: 80 },
           constraints: { allowResize: false }
         },
         'texto-jogador': {
@@ -226,12 +226,12 @@ const ESCALACAO_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 52, y: 33 },
-          defaultSize: { width: 690, height: 690 * (720/1280) },
+          defaultSize: { width: 690, height: 690 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: 400, y: 407 },
-          defaultSize: { width: 950, height: 950 * (1062/666) },
+          defaultSize: { width: 950, height: 950 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'lista-jogadores': {
@@ -286,12 +286,12 @@ const ESCALACAO_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 850, y: -40 },
-          defaultSize: { width: 450, height: 450 * (720/1280) },
+          defaultSize: { width: 450, height: 450 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: 175, y: 100 },
-          defaultSize: { width: 950, height: 950 * (1062/666) },
+          defaultSize: { width: 950, height: 950 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'lista-jogadores': {
@@ -344,7 +344,7 @@ const MATCHDAY_CONFIG: GeneratorConfig = {
   defaultRenderOrder: [
     'background',
     'placar',
-    'logo', 
+    'logo',
     'jogador',
     'canais-tv',
     'info-partida'
@@ -366,12 +366,12 @@ const MATCHDAY_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 312, y: 135 },
-          defaultSize: { width: 820, height: 820 * (720/1280) },
+          defaultSize: { width: 820, height: 820 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: -231, y: 90 },
-          defaultSize: { width: 950, height: 950 * (1062/666) },
+          defaultSize: { width: 950, height: 950 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'canais-tv': {
@@ -426,12 +426,12 @@ const MATCHDAY_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 312, y: 135 },
-          defaultSize: { width: 820, height: 820 * (720/1280) },
+          defaultSize: { width: 820, height: 820 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: -231, y: 90 },
-          defaultSize: { width: 950, height: 950 * (1062/666) },
+          defaultSize: { width: 950, height: 950 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'canais-tv': {
@@ -540,7 +540,7 @@ const MOTM_CONFIG: GeneratorConfig = {
     'background',
     'placar',
     'logo',
-    'jogador', 
+    'jogador',
     'texto-jogador',
     'info-partida'
   ],
@@ -561,12 +561,12 @@ const MOTM_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 80, y: 565 },
-          defaultSize: { width: 930, height: 930 * (720/1280) },
+          defaultSize: { width: 930, height: 930 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: 121, y: 85 },
-          defaultSize: { width: 900, height: 900 * (1062/666) },
+          defaultSize: { width: 900, height: 900 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'texto-jogador': {
@@ -621,12 +621,12 @@ const MOTM_CONFIG: GeneratorConfig = {
         },
         placar: {
           defaultPosition: { x: 80, y: 1200 },
-          defaultSize: { width: 930, height: 930 * (720/1280) },
+          defaultSize: { width: 930, height: 930 * (720 / 1280) },
           constraints: { lockAspectRatio: true }
         },
         jogador: {
           defaultPosition: { x: 121, y: 300 },
-          defaultSize: { width: 900, height: 900 * (1062/666) },
+          defaultSize: { width: 900, height: 900 * (1062 / 666) },
           constraints: { lockAspectRatio: true }
         },
         'texto-jogador': {

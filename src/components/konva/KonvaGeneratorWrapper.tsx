@@ -1,6 +1,6 @@
 // src/components/konva/KonvaGeneratorWrapper.tsx
 
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { Stage, Layer } from 'react-konva';
 
 import {
@@ -76,6 +76,9 @@ const KonvaGeneratorWrapper: React.FC<KonvaGeneratorWrapperProps> = ({
     maxHistoryStates: 50,
   });
 
+  // Adicionar DEPOIS da linha 47 (após o hook useKonvaGenerator):
+  const [isDragging, setIsDragging] = useState(false);
+
   // Manipular exportação
   const handleExport = useCallback(
     async (config?: ExportConfig) => {
@@ -125,6 +128,26 @@ const KonvaGeneratorWrapper: React.FC<KonvaGeneratorWrapperProps> = ({
       // Não salvar no histórico aqui pois será salvo pelo próprio elemento
     },
     [updateElement]
+  );
+
+  // Adicionar DEPOIS da linha 60 (após as outras funções):
+
+  // Elementos estáveis durante drag
+  const stableElements = useMemo(() => {
+    return isDragging ? elements : elements;
+  }, [elements, isDragging]);
+
+  // Handlers para drag
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (newOrder: string[]) => {
+      setIsDragging(false);
+      handleElementsReorder(newOrder);
+    },
+    [handleElementsReorder]
   );
 
   // Atalhos de teclado
@@ -187,7 +210,7 @@ const KonvaGeneratorWrapper: React.FC<KonvaGeneratorWrapperProps> = ({
 
   return (
     <div className={`konva-generator-wrapper ${className}`}>
-      <div className="flex h-full">
+      <div className="flex">
         {/* Painel lateral esquerdo */}
         {showUI && (
           <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -220,7 +243,8 @@ const KonvaGeneratorWrapper: React.FC<KonvaGeneratorWrapperProps> = ({
             {/* Gerenciador de camadas */}
             <div className="flex-1 overflow-y-auto">
               <LayerManager
-                elements={elements}
+                key="layer-manager-stable"
+                elements={stableElements} // ← Usar stableElements
                 selectedElementId={selectedElementId}
                 onElementSelect={selectElement}
                 onElementToggleVisibility={(elementId) => {
@@ -237,7 +261,8 @@ const KonvaGeneratorWrapper: React.FC<KonvaGeneratorWrapperProps> = ({
                     saveToHistory(`Toggle lock: ${elementId}`);
                   }
                 }}
-                onElementsReorder={handleElementsReorder}
+                onElementsReorder={handleDragEnd} // ← Usar handleDragEnd
+                onDragStart={handleDragStart} // ← Adicionar onDragStart
               />
             </div>
 

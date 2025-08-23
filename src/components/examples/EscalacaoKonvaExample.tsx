@@ -99,7 +99,7 @@ const EscalacaoKonvaExample: React.FC<EscalacaoKonvaExampleProps> = ({
       {/* Sistema Konva */}
       <div
         className="bg-white rounded-lg shadow-sm border overflow-hidden"
-        style={{ height: '800px' }}
+        // style={{ height: '800px' }}
       >
         <KonvaGeneratorWrapper
           generatorType="escalacao"

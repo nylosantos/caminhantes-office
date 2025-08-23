@@ -13,12 +13,12 @@ import NextGameGenerator from '../escalacoes/NextGameGenerator';
 import FullTimeGenerator from '../escalacoes/FullTimeGenerator';
 import ConfrontoGenerator from '../escalacoes/ConfrontoGenerator';
 import GameArtGenerator from '../escalacoes/GameArtGenerator'; // Nova importação
-import GameArtGenerator_Refactored from '../escalacoes/GameArtGenerator_Refactored'; // Nova importação
 
 // 1. Importar a configuração de navegação e os tipos
 import { ViewType, getVisibleNavItems, NavItem } from '@/config/navigation';
 import { UserData } from '@/types/user';
 import SectionHeader from './SectionHeader';
+import PredictionGenerator from '../escalacoes/PredictionGenerator';
 
 const HomePage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -148,9 +148,9 @@ const HomePage: React.FC = () => {
     );
   }
   // Nova renderização condicional para o GameArtGenerator
-  if (currentView === 'new') {
+  if (currentView === 'palpites') {
     return (
-      <GameArtGenerator_Refactored
+      <PredictionGenerator
         translations={translations}
         onBack={() => setCurrentView('home')}
         setCurrentView={setCurrentView}

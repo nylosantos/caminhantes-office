@@ -748,7 +748,13 @@ const MatchDayGenerator: React.FC<MatchDayGeneratorProps> = ({
             ref={hiddenDisplayRef}
             style={{ width: '1290px', height: '327px' }}
           >
-            <SplitRectangleDisplay selectedMatch={selectedMatch} />
+            <SplitRectangleDisplay
+              selectedMatch={selectedMatch}
+              awayPenScore={null}
+              awayScore={null}
+              homePenScore={null}
+              homeScore={null}
+            />
           </div>
         </div>
       )}

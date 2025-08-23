@@ -1502,8 +1502,30 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
                 transformOrigin: 'top left',
               }}
             >
-              {customMatch && (
-                <SplitRectangleDisplay selectedMatch={customMatch} />
+              {customMatch && selectedMatch && (
+                <SplitRectangleDisplay
+                  selectedMatch={selectedMatch}
+                  awayPenScore={
+                    generatorData.awayPenaltyScore === ''
+                      ? null
+                      : +generatorData.awayPenaltyScore
+                  }
+                  awayScore={
+                    generatorData.awayScore === ''
+                      ? null
+                      : +generatorData.awayScore
+                  }
+                  homePenScore={
+                    generatorData.homePenaltyScore === ''
+                      ? null
+                      : +generatorData.homePenaltyScore
+                  }
+                  homeScore={
+                    generatorData.homeScore === ''
+                      ? null
+                      : +generatorData.homeScore
+                  }
+                />
               )}
             </div>
           </div>

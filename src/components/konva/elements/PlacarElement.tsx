@@ -39,8 +39,12 @@ const PlacarElement: React.FC<PlacarElementProps> = ({
     const tempContainer = document.createElement('div');
     tempContainer.style.width = '1280px';
     tempContainer.style.height = '720px';
-    // tempContainer.style.position = 'absolute';
-    // tempContainer.style.left = '-9999px';
+    tempContainer.style.display = 'flex';
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '0px';
+    tempContainer.style.top = '0px';
+    tempContainer.style.zIndex = '-1000';
+
     document.body.appendChild(tempContainer);
 
     const root = createRoot(tempContainer);
@@ -145,9 +149,6 @@ const PlacarElement: React.FC<PlacarElementProps> = ({
       </>
     );
   };
-  useEffect(() => {
-    console.log('imagem do placar:', placarImage);
-  }, [placarImage]);
 
   return (
     <Group

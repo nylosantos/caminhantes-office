@@ -81,11 +81,13 @@ export interface BackgroundElementData {
   imageUrl: string;
   section: IMAGE_SECTIONS;
   aspectRatio?: number;
+  constraints?: ConstraintsData;
 }
 
 export interface LogoElementData {
   imageUrl: string;
   size: number;
+  constraints?: ConstraintsData;
 }
 
 export interface PlacarElementData {
@@ -96,12 +98,14 @@ export interface PlacarElementData {
   awayPenScore?: number | null;
   logoOffset?: number;
   logoFadePercentage?: number;
+  constraints?: ConstraintsData;
 }
 
 export interface JogadorElementData {
   player: Player;
   imageUrl: string;
   aspectRatio: number; // 1062/666 para jogadores
+  constraints?: ConstraintsData;
 }
 
 export interface TextoJogadorElementData {
@@ -110,6 +114,7 @@ export interface TextoJogadorElementData {
   showNumber: boolean;
   nameStyle: TextStyle;
   numberStyle: TextStyle;
+  constraints?: ConstraintsData;
 }
 
 export interface ListaJogadoresElementData {
@@ -129,6 +134,7 @@ export interface ListaJogadoresElementData {
     coachTitle: TextStyle;
     coachName: TextStyle;
   };
+  constraints?: ConstraintsData;
 }
 
 export interface CanaisTvElementData {
@@ -143,6 +149,7 @@ export interface CanaisTvElementData {
     line: number;
   };
   alignment: 'left' | 'right' | 'center';
+  constraints?: ConstraintsData;
 }
 
 export interface GraficoElementData {
@@ -156,6 +163,7 @@ export interface GraficoElementData {
     draw: string;
     away: string;
   };
+  constraints?: ConstraintsData;
 }
 
 export interface SubstituicoesElementData {
@@ -166,6 +174,7 @@ export interface SubstituicoesElementData {
     arrow: TextStyle;
   };
   maxWidth: number;
+  constraints?: ConstraintsData;
 }
 
 export interface BackgroundUsuarioElementData {
@@ -175,14 +184,24 @@ export interface BackgroundUsuarioElementData {
     imageUrl: string;
     opacity: number;
   };
+  constraints?: ConstraintsData;
 }
 
 export interface InfoPartidaElementData {
   matchData: MatchFormData;
   style: TextStyle;
-  layout: 'horizontal' | 'vertical';
+  layout: 'quadrada ' | 'horizontal' | 'vertical';
   showReferee: boolean;
+  constraints?: ConstraintsData;
 }
+
+export interface ConstraintsData {
+  minSize?: Size;
+  maxSize?: Size;
+  lockAspectRatio?: boolean;
+  allowResize?: boolean;
+  allowMove?: boolean;
+};
 
 // ==================== ELEMENTO CANVAS ====================
 
@@ -217,13 +236,7 @@ export interface FormatConfig {
   elements: Record<ElementType, {
     defaultPosition: Position;
     defaultSize: Size;
-    constraints?: {
-      minSize?: Size;
-      maxSize?: Size;
-      lockAspectRatio?: boolean;
-      allowResize?: boolean;
-      allowMove?: boolean;
-    };
+    constraints?: ConstraintsData;
   }>;
 }
 
@@ -390,6 +403,7 @@ export interface LayerManagerProps {
   onElementToggleVisibility: (elementId: string) => void;
   onElementToggleLock: (elementId: string) => void;
   onElementsReorder: (newOrder: string[]) => void;
+  onDragStart?: () => void; // ← Adicionar esta
 }
 
 export interface TransformManagerProps {

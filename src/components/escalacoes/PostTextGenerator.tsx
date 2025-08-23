@@ -32,7 +32,8 @@ export type PostType =
   | 'inicioProrrogacao'
   | 'inicioSegundoTempoProrrogacao'
   | 'gol'
-  | 'substituicao';
+  | 'substituicao'
+  | 'palpites';
 
 interface PostTextGeneratorProps {
   postType: PostType;
@@ -143,6 +144,22 @@ const PostTextGenerator: React.FC<PostTextGeneratorProps> = ({
     let hashtags = '';
 
     switch (postType) {
+      case 'palpites':
+        text = `
+⚽️ TÁ NA HORA DO PALPITE PARA ${match.teams.home.name} 🆚 ${
+          match.teams.away.name
+        }!
+🏆 ${competitionRound}
+🗣️ Arbitragem: ${match.fixture.referee || 'A definir'}
+🏟️ Local: ${match.fixture.venue.name}
+🗓️ Data e Hora: ${matchDateFormatted} (Horário de Brasília)
+Deixe o seu nos comentários! 🔥
+`.trim();
+        hashtags = `\n#${leagueNameClean} #${confrontationHashtag}${
+          match.league.name === 'Premier League' ? ' #PremierLeagueNaESPN' : ''
+        }`;
+        break;
+
       case 'proximoJogo':
         text = `
 ⚽️ PRÓXIMO JOGO: ${match.teams.home.name} 🆚 ${match.teams.away.name}!

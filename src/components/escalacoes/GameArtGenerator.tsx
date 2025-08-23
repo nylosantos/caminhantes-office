@@ -310,7 +310,7 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
     //       return element;
     //   }
     // });
-
+    console.log('🖼️ GameArtGenerator: Elementos atualizados', newElements);
     setElements(newElements);
     setRenderOrder(createDefaultRenderOrder(newElements));
     // }
@@ -619,6 +619,7 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (const key of elementsToDraw) {
+        console.log(`🎨 drawLayer: Renderizando camada ${key}`);
         if (key === 'background' && generatorData.userBackgroundImg) {
           try {
             const userBgImg = await loadImage(generatorData.userBackgroundImg);
