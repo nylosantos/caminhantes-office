@@ -103,6 +103,13 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
   const logoAndTrophyZIndex = 20; // Logos: à frente do VS grande, atrás do placar/VS condicional
   const scoreTextZIndex = 20; // Placar/VS condicional: à frente de tudo
 
+  // ✅ SOLUÇÃO: Verifique se os dados ainda estão sendo carregados
+  if (loading || !homeTeam || !awayTeam) {
+    // Se ainda estiver carregando, não retorne o JSX do placar.
+    // Isso evita que o dom-to-image capture um estado incompleto.
+    return null;
+  }
+
   return (
     <div
       className="relative bg-transparent overflow-hidden"
@@ -313,25 +320,24 @@ const SplitRectangleDisplay: React.FC<SplitRectangleDisplayProps> = ({
       ) : (
         <>
           <p
-            className="absolute text-[266px] font-placar-black text-white uppercase leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-full text-[266px] font-placar-black text-white uppercase leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{
               top: '65.7%',
               zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
+              textShadow: '2px 2px 4px #000000',
             }}
           >
             {homeScore}-{awayScore}
-            {/* {selectedMatch.goals.home}-{selectedMatch.goals.away} */}
           </p>
           {selectedMatch.fixture.status.short === 'PEN' &&
-            // selectedMatch.score &&
-            // selectedMatch.score.penalty != null
             homePenScore != null &&
             awayPenScore != null && (
               <p
-                className="absolute text-[40px] font-placar-black text-white leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2 mt-32"
+                className="absolute w-full text-[40px] font-placar-black text-white leading-[1.414] text-center left-1/2 -translate-x-1/2 -translate-y-1/2 mt-32"
                 style={{
                   top: '65.7%',
                   zIndex: scoreTextZIndex, // Z-index para o placar/VS condicional
+                  textShadow: '2px 2px 4px #000000',
                 }}
               >
                 ({homePenScore}-{awayPenScore} pen.)

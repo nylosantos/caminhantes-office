@@ -46,6 +46,13 @@ import GameArtTypeSelector from './GameArtTypeSelector';
 import ScoreEditor from './ScoreEditor';
 import GoalPlayerSelector from './GoalPlayerSelector';
 import SubstitutionsManager from './SubstitutionsManager';
+import BaseImageGenerator, { CanvasElement } from './BaseImageGenerator';
+import {
+  convertCanvasConfigToElements,
+  createDefaultRenderOrder,
+  generateMatchInfoText,
+  getBackgroundImageUrl,
+} from './GeneratorUtils';
 
 interface GameArtGeneratorProps {
   onBack: () => void;
@@ -63,8 +70,8 @@ interface ElementConfig {
   placarX: number;
   placarY: number;
   placarSize: number;
-  stadiumTextX: number;
-  stadiumTextY: number;
+  infoX: number;
+  infoY: number;
   userBackgroundImgX: number;
   userBackgroundImgY: number;
   userBackgroundImgWidth: number;
@@ -99,8 +106,8 @@ const initialImageGeneratorConfigs: Record<
     placarX: 80,
     placarY: 565,
     placarSize: 930,
-    stadiumTextX: 1080 / 2,
-    stadiumTextY: 40,
+    infoX: 1080 / 2,
+    infoY: 40,
     userBackgroundImgX: 0,
     userBackgroundImgY: 0,
     userBackgroundImgWidth: 1080,
@@ -130,8 +137,8 @@ const initialImageGeneratorConfigs: Record<
     placarX: 115,
     placarY: 923,
     placarSize: 875,
-    stadiumTextX: 1080 / 2,
-    stadiumTextY: 185,
+    infoX: 1080 / 2,
+    infoY: 185,
     userBackgroundImgX: 0,
     userBackgroundImgY: 0,
     userBackgroundImgWidth: 1080,
@@ -161,8 +168,8 @@ const initialImageGeneratorConfigs: Record<
     placarX: 850,
     placarY: -40,
     placarSize: 450,
-    stadiumTextX: 1920 / 2,
-    stadiumTextY: 40,
+    infoX: 1920 / 2,
+    infoY: 40,
     userBackgroundImgX: 0,
     userBackgroundImgY: 0,
     userBackgroundImgWidth: 1920,
@@ -248,6 +255,74 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
     userBackgroundImg: null,
     userBackgroundImgAspectRatio: null,
   });
+
+  // Estados do novo sistema
+  const [elements, setElements] = useState<CanvasElement[]>([]);
+  // const [renderOrder, setRenderOrder] = useState<string[]>([]);
+
+  const [placarImg, setPlacarImg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hiddenDisplayRef.current) {
+      domtoimage
+        .toPng(hiddenDisplayRef.current)
+        .then((dataUrl) => {
+          setPlacarImg(dataUrl);
+        })
+        .catch((error) => {
+          console.error('Erro ao converter o placar em imagem:', error);
+          setPlacarImg(null);
+        });
+    }
+  }, [selectedMatch, generatorData]);
+
+  // Atualizar elementos quando dados mudarem
+  useEffect(() => {
+    // if (generatorData.gameArt || generatorData.featuredPlayer) {
+    const config = initialImageGeneratorConfigs[activeImageType];
+    const newElements = convertCanvasConfigToElements(
+      config,
+      generatorData,
+      activeImageType,
+      baseImages,
+      placarImg,
+      'GAMEART'
+    );
+
+    // Atualizar conteúdo específico dos elementos
+    // const updatedElements = newElements.map((element) => {
+    //   switch (element.id) {
+    //     case 'background':
+    //       return {
+    //         ...element,
+    //         content: getBackgroundImageUrl(
+    //           baseImages,
+    //           activeImageType,
+    //           'fim_de_jogo'
+    //         ),
+    //       };
+    //     case 'info':
+    //       return {
+    //         ...element,
+    //         content: generateMatchInfoText(generatorData.matchData),
+    //       };
+    //     default:
+    //       return element;
+    //   }
+    // });
+
+    setElements(newElements);
+    setRenderOrder(createDefaultRenderOrder(newElements));
+    // }
+  }, [generatorData, activeImageType, baseImages]);
+
+  const handleGenerateStart = () => {
+    setGenerating(true);
+  };
+
+  const handleGenerateEnd = () => {
+    setGenerating(false);
+  };
 
   // Função para obter os passos dinamicamente baseado no tipo de arte
   const getSteps = () => {
@@ -465,10 +540,11 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
     const reader = new FileReader();
     reader.onloadend = () => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
+        const imgURL = await loadImage(reader.result as string);
         setGeneratorData((prev) => ({
           ...prev,
-          userBackgroundImg: reader.result as string,
+          userBackgroundImg: imgURL.src,
           userBackgroundImgAspectRatio: img.width / img.height,
         }));
       };
@@ -629,7 +705,7 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
           ctx.font = '800 24px "Funnel Display", Arial, sans-serif';
           ctx.textAlign = 'center';
           const text = `${generatorData.matchData.stadium.toUpperCase()} - ${generatorData.matchData.competitionRound.toUpperCase()}`;
-          ctx.fillText(text, config.stadiumTextX, config.stadiumTextY);
+          ctx.fillText(text, config.infoX, config.infoY);
         } else if (key === 'jogador' && generatorData.artType === 'GOL') {
           console.log(
             `👤 drawLayer [${generatorData.goal?.scorerImageUrl}]: Renderizando imagem do jogador`
@@ -1297,6 +1373,19 @@ const GameArtGenerator: React.FC<GameArtGeneratorProps> = ({
                   </div>
                 </div>
               </div>
+              {/* Gerador de imagem */}
+              {/* <BaseImageGenerator
+                configs={initialImageGeneratorConfigs}
+                activeImageType={activeImageType}
+                elements={elements}
+                onElementsChange={setElements}
+                renderOrder={renderOrder}
+                onRenderOrderChange={setRenderOrder}
+                generating={generating}
+                onGenerateStart={handleGenerateStart}
+                onGenerateEnd={handleGenerateEnd}
+                downloadFileName="game_art"
+              /> */}
               {selectedMatch && (
                 <PostTextGenerator
                   postType={getPostType()}

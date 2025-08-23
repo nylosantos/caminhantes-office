@@ -80,3 +80,97 @@ h6 {
   font-family: 'Funnel Display', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
 }
+
+/* .konva-container {
+  width: 100%;
+  height: 100%;
+  max-height: 600px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+} */
+
+/* Container principal do gerador Konva */
+.konva-image-generator {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Container do canvas Konva */
+.konva-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  padding: 20px;
+  overflow: hidden;
+  min-height: 400px;
+  max-height: 80vh;
+}
+
+/* Versão limpa sem grid */
+.konva-container.clean {
+  background: #f3f4f6;
+  background-image: none;
+}
+
+/* Estados */
+.konva-container.loading {
+  background-color: #f9fafb;
+  cursor: wait;
+}
+
+.konva-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background-color: #1f2937;
+  max-height: none;
+}
+
+.konva-container.selecting {
+  cursor: crosshair;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .konva-container {
+    padding: 10px;
+    min-height: 300px;
+    max-height: 70vh;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .konva-container {
+    padding: 15px;
+    min-height: 350px;
+    max-height: 75vh;
+  }
+}
+
+@media (min-width: 1025px) {
+  .konva-container {
+    padding: 20px;
+    min-height: 400px;
+    max-height: 80vh;
+  }
+}

@@ -249,7 +249,8 @@ export type ViewType =
   | 'motm'
   | 'fullTime'
   | 'confronto'
-  | 'gameArt'; // Nova view para o GameArtGenerator
+  | 'gameArt' // Nova view para o GameArtGenerator
+  | 'new'; // Nova view para o GameArtGenerator
 
 export interface NavItem {
   id: ViewType;
@@ -269,6 +270,22 @@ export interface NavItem {
 
 export const navigationItems: NavItem[] = [
   // Nova entrada para o GameArtGenerator
+  {
+    id: 'new',
+    title: 'Artes do Jogo Teste',
+    description:
+      'Crie artes para todos os momentos da partida: início, gols, substituições e mais',
+    icon: <Brush className="w-8 h-8 text-cyan-600" />,
+    lucideIcon: Brush,
+    roles: ['user', 'root', 'editor'],
+    isCard: true,
+    colorClasses: {
+      border: 'border-cyan-200',
+      iconBg: 'bg-cyan-100',
+      iconColor: 'text-cyan-600',
+      button: 'bg-cyan-600 hover:bg-cyan-700',
+    },
+  },
   {
     id: 'gameArt',
     title: 'Artes do Jogo',

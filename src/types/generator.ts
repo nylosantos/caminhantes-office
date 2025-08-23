@@ -34,6 +34,17 @@ export interface BaseGeneratorData {
     featuredPlayerImgIndex: number | null;
 }
 
+// Tipos de paginas de arte que podem ser gerados
+export type PageArtType =
+    | 'GAMEART'
+    | 'ESCALACAO'
+    | 'ANIVERSARIO'
+    | 'CONFRONTO'
+    | 'MATCHDAY'
+    | 'MOTM'
+    | 'PROXIMO_JOGO'
+    | 'PALPITES';
+
 // Tipos de arte que podem ser gerados
 export type GameArtType =
     | 'INICIO_JOGO'

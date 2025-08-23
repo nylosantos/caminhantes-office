@@ -24,7 +24,6 @@ export const useRoundTranslations = (): UseRoundTranslationsResult => {
                 const ref = collection(db, 'translations');
                 const snap = await getDocs(ref);
                 const fetchedTranslations = snap.docs.map(doc => doc.data() as RoundTranslationsDocument);
-
                 setTranslations(fetchedTranslations);
             } catch (err) {
                 console.error("Error fetching translations:", err);

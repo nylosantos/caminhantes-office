@@ -13,6 +13,7 @@ import NextGameGenerator from '../escalacoes/NextGameGenerator';
 import FullTimeGenerator from '../escalacoes/FullTimeGenerator';
 import ConfrontoGenerator from '../escalacoes/ConfrontoGenerator';
 import GameArtGenerator from '../escalacoes/GameArtGenerator'; // Nova importação
+import GameArtGenerator_Refactored from '../escalacoes/GameArtGenerator_Refactored'; // Nova importação
 
 // 1. Importar a configuração de navegação e os tipos
 import { ViewType, getVisibleNavItems, NavItem } from '@/config/navigation';
@@ -139,6 +140,17 @@ const HomePage: React.FC = () => {
   if (currentView === 'gameArt') {
     return (
       <GameArtGenerator
+        translations={translations}
+        onBack={() => setCurrentView('home')}
+        setCurrentView={setCurrentView}
+        setIsMenuOpen={setIsMenuOpen}
+      />
+    );
+  }
+  // Nova renderização condicional para o GameArtGenerator
+  if (currentView === 'new') {
+    return (
+      <GameArtGenerator_Refactored
         translations={translations}
         onBack={() => setCurrentView('home')}
         setCurrentView={setCurrentView}
